@@ -7,32 +7,43 @@ using LanguageExt.Common;
 using MediaOrganizer.Logic;
 using static SortPhotos.Core.Types;
 using static LanguageExt.Prelude;
+using System.Diagnostics;
 
 namespace SortPhotos.Logic
 {
     public class MediaService
     {
-        private List<MediaInfo> _allFiles = new List<MediaInfo>();
-        private List<MediaInfo> _displayedFiles = new List<MediaInfo>();
+        private List<MediaInfo> allFiles = new List<MediaInfo>();
+        private List<MediaInfo> displayedFiles = new List<MediaInfo>();
 
         /// <summary>
         /// Scans the specified directory for media files
         /// </summary>
-        public async Task<Either<Error, Seq<MediaInfo>>> ScanDirectoryAsync(string path)
+        public async Task<Either<Error, FileResponse>> ScanDirectoryAsync(string path)
         {
-            var result = await ScanFiles.ScanFilesAsync(path);
+            try
+            {
 
-            return result; // todo reinstate properly
-            //return result.Match(
-            //    Right: files =>
-            //    {
-            //        _allFiles = files.ToList();
-            //        _displayedFiles = new List<MediaInfo>(_allFiles);
-            //        return files;
-            //    },
-            //    Left: error => error);
-            //);
+                var result = ScanFiles.DoScanFiles(path).Run();
+                allFiles.AddRange(result.Files);
+                displayedFiles.AddRange(result.Files);
+                return result!;
+            }
+            catch (ManyExceptions many)
+            {
+                foreach (var ex in many)
+                {
+                    Debug.WriteLine(ex.Message);
+                }
+                return many.Errors.First().ToError();
+
+            }
+            catch (ErrorException e)
+            {
+                return e.ToError();
+            }
         }
+
 
         /// <summary>
         /// Updates the state of a file
@@ -40,17 +51,17 @@ namespace SortPhotos.Logic
         public MediaInfo UpdateFileState(string fullPath, FileState newState)
         {
             // Find the file in the all files collection
-            var fileIndex = _allFiles.FindIndex(f => f.FullPath == fullPath);
+            var fileIndex = allFiles.FindIndex(f => f.FullPath == fullPath);
             if (fileIndex >= 0)
             {
                 // Create updated file with new state
-                var updatedFile = _allFiles[fileIndex] with { State = newState };
+                var updatedFile = allFiles[fileIndex] with { State = newState };
 
                 // Update in collections
-                _allFiles[fileIndex] = updatedFile;
+                allFiles[fileIndex] = updatedFile;
 
                 // Remove from displayed files
-                _displayedFiles.RemoveAll(f => f.FullPath == fullPath);
+                displayedFiles.RemoveAll(f => f.FullPath == fullPath);
 
                 return updatedFile;
             }
@@ -63,7 +74,7 @@ namespace SortPhotos.Logic
         /// </summary>
         public IEnumerable<MediaInfo> GetFilesToProcess()
         {
-            return _allFiles;
+            return allFiles;
         }
 
         /// <summary>
@@ -71,7 +82,7 @@ namespace SortPhotos.Logic
         /// </summary>
         public IEnumerable<MediaInfo> GetDisplayedFiles()
         {
-            return _displayedFiles;
+            return displayedFiles;
         }
 
         /// <summary>
@@ -79,7 +90,7 @@ namespace SortPhotos.Logic
         /// </summary>
         public async Task<Either<Error, int>> OrganizeFilesAsync(string destinationPath)
         {
-            return await OrganiseFiles.OrganizeFilesAsync(toSeq(_allFiles), destinationPath); // todo why ToSeq() not working
+            return await OrganiseFiles.OrganizeFilesAsync(toSeq(allFiles), destinationPath); // todo why ToSeq() not working
         }
 
         /// <summary>
@@ -87,7 +98,7 @@ namespace SortPhotos.Logic
         /// </summary>
         public int CountFilesForDeletion()
         {
-            return OrganiseFiles.CountFilesForDeletion(toSeq(_allFiles));
+            return OrganiseFiles.CountFilesForDeletion(toSeq(allFiles));
         }
     }
 }

@@ -32,10 +32,11 @@ namespace SortPhotos.Forms
                 var result = await _mediaService.ScanDirectoryAsync(_currentScanPath);
 
                 result.Match(
-                    Right: files =>
+                    Right: response =>
                     {
-                        DisplayFiles(files);
-                        lblStatus.Text = $"Found {files.Count()} files";
+                        DisplayFiles(response.Files);
+                        lblStatus.Text = $"Found {response.Files.Count()} files";
+                        // todo display user errors
                     },
                     Left: error =>
                     {

@@ -52,7 +52,7 @@ namespace MediaOrganizer.Logic
             }
             catch (Exception ex)
             {
-                return AppErrors.ThereWasAProblem;
+                return AppErrors.ThereWasAProblem(Error.New(ex.Message));
             }
         }
 

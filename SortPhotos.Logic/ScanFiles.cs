@@ -10,108 +10,56 @@ using System.Diagnostics;
 using System.Linq;
 using static SortPhotos.Core.Types;
 using SortPhotos.Core;
+using LanguageExt.Traits;
+using static SortPhotos.Core.UserErrors;
 
 namespace MediaOrganizer.Logic
 {
     public static class ScanFiles
     {
-        private static readonly string[] ImageExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp" };
-        private static readonly string[] VideoExtensions = { ".mp4", ".avi", ".mov", ".wmv", ".mkv", ".flv", ".webm" };
+        private static readonly Seq<string> ImageExtensions = [ ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp" ];
+        private static readonly Seq<string> VideoExtensions = [ ".mp4", ".avi", ".mov", ".wmv", ".mkv", ".flv", ".webm" ];
 
-        /// <summary>
-        /// Scans for image and video files and returns file information
-        /// </summary>
-        public static async Task<Either<Error, Seq<MediaInfo>>> ScanFilesAsync(string path)
-        {
-            try
-            {
-                var list = new List<MediaInfo>();
 
-                // Get all image files
-                foreach (var extension in ImageExtensions)
-                {
-                    var imageFiles = await GetFilesWithExtensionAsync(path, extension);
-                    foreach (var file in imageFiles)
-                    {
-                        await AddFileInfo(file, list, FileCategory.Image);
-                    }
-                }
+        public static IO<FileResponse> DoScanFiles(string path) =>
+             (from extensions in IO.pure(ImageExtensions.Concat(VideoExtensions))
+              from files in extensions.Map(ext => GetFilesWithExtension(path, ext)).Partition()
+              from infos in files.Succs
+                                 .Flatten()
+                                 .Map(CreateFileInfoAsync)
+                                 .Partition()
+              let allErrors = files.Fails.Concat(infos.Fails)
+              let separatedErrors = allErrors.SeparateUserErrors()
+              from _ in separatedErrors.Unexpected.Traverse(IO.fail<FileResponse>)             
+              select new FileResponse(separatedErrors.User, infos.Succs)).Safe();
 
-                // Get all video files
-                foreach (var extension in VideoExtensions)
-                {
-                    var videoFiles = await GetFilesWithExtensionAsync(path, extension);
-                    foreach (var file in videoFiles)
-                    {
-                        await AddFileInfo(file, list, FileCategory.Video);
-                    }
-                }
-
-                // Sort by date (newest first)
-                return toSeq(from item in list
-                             orderby item.Date
-                             select item);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return AppErrors.NeedFileSystemAccess; // todo check if error message appropriate
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex.Message);
-                return AppErrors.ThereWasAProblem;
-            }
-        }
-
-        /// <summary>
-        /// Gets files with the specified extension from a directory
-        /// </summary>
-        private static Task<IEnumerable<string>> GetFilesWithExtensionAsync(string path, string extension)
-        {
-            return Task.Run(() =>
-            {
-                try
-                {
-                    return Directory.GetFiles(path, $"*{extension}", SearchOption.AllDirectories);
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"Error getting files with extension {extension}: {ex.Message}");
-                    return Enumerable.Empty<string>();
-                }
-            });
-        }
+        private static IO<Seq<string>> GetFilesWithExtension(string path, string extension) =>
+            IO.lift(env => toSeq(Directory.GetFiles(path, $"*{extension}", SearchOption.AllDirectories)))
+                | @catch(e => IO.fail<Seq<string>>(AppErrors.GetFilesError(extension, e))); // add specific unauthorised exct
 
         /// <summary>
         /// Adds file info for a file to the collection
         /// </summary>
-        private static Task AddFileInfo(string path, List<MediaInfo> list, FileCategory category)
-        {
-            return Task.Run(() =>
+        private static IO<MediaInfo> CreateFileInfoAsync(string path) =>
+            IO.lift(env =>
             {
-                try
-                {
-                    var fileInfo = new FileInfo(path);
-                    if (!fileInfo.Exists) return;
+                var fileInfo = new FileInfo(path);
+                if (!fileInfo.Exists) IO.fail<MediaInfo>(Error.New("File no longer exists"));
 
-                    var filename = Path.GetFileNameWithoutExtension(path);
-                    var extension = Path.GetExtension(path);
+                var filename = Path.GetFileNameWithoutExtension(path);
+                var extension = Path.GetExtension(path);
 
-                    list.Add(new MediaInfo(
-                        filename,
-                        path,
-                        extension,
-                        fileInfo.Length,
-                        fileInfo.CreationTime,
-                        category,
-                        FileState.Unprocessed));
-                   
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"Error reading file info for {path}: {ex.Message}");
-                }
-            });
-        }
+                return new MediaInfo(
+                    filename,
+                    path,
+                    extension,
+                    fileInfo.Length,
+                    fileInfo.CreationTime,
+                    Enumerable.Contains(ImageExtensions, extension)
+                        ? FileCategory.Image
+                        : FileCategory.Video,
+                    FileState.Unprocessed);
+            })
+            | @catch(e => IO.fail<MediaInfo>(AppErrors.ReadFileError(path, e)));
     }
 }
