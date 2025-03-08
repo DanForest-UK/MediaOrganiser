@@ -22,6 +22,9 @@ namespace SortPhotos.Core
             );
         }
 
+        public static bool HasValue(this string? value) =>
+            !string.IsNullOrWhiteSpace(value);
+
         public static IO<A> Safe<A>(this IO<A> ma) =>
             ma
             | @catch(e => IO.fail<A>(AppErrors.ThereWasAProblem(e)));
