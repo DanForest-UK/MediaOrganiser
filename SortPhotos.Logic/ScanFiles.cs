@@ -50,11 +50,12 @@ namespace SortPhotos.Logic
                 var extension = Path.GetExtension(path);
 
                 return new MediaInfo(
-                    filename,
-                    path,
-                    extension,
-                    fileInfo.Length,
-                    fileInfo.CreationTime,
+                    new FileId(Guid.NewGuid().GetHashCode()),
+                    new FileName(filename),
+                    new FullPath(path),
+                    new Extension(extension),
+                    new Size(fileInfo.Length),
+                    new Date(fileInfo.CreationTime),
                     Enumerable.Contains(ImageExtensions, extension)
                         ? FileCategory.Image
                         : FileCategory.Video,

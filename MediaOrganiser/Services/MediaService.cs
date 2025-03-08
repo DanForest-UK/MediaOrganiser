@@ -9,13 +9,12 @@ using System.Threading.Tasks;
 using static SortPhotos.Core.Types;
 using static LanguageExt.Prelude;
 using LanguageExt.Common;
+using MusicTools.Logic;
 
 namespace MediaOrganiser.Services
 {
     public class MediaService
     {
-        private Seq<MediaInfo> files = new Seq<MediaInfo>();
-
         /// <summary>
         /// Scans the specified directory for media files
         /// </summary>
@@ -24,8 +23,8 @@ namespace MediaOrganiser.Services
             try
             {
 
-                var result = ScanFiles.DoScanFiles(path).Run();
-                files = result.Files;
+                var result = await Task.Run(() => ScanFiles.DoScanFiles(path).Run());
+                ObservableState.SetFiles(result.Files);
                 return result!;
             }
             catch (ManyExceptions many)
@@ -48,7 +47,7 @@ namespace MediaOrganiser.Services
         /// </summary>
         public async Task<Either<Error, int>> OrganizeFilesAsync(string destinationPath)
         {
-            return await OrganiseFiles.OrganizeFilesAsync(toSeq(files), destinationPath); 
+            return await OrganiseFiles.OrganizeFilesAsync(toSeq(ObservableState.Current.Files.Values), destinationPath); 
         }
 
         /// <summary>
@@ -56,7 +55,7 @@ namespace MediaOrganiser.Services
         /// </summary>
         public int CountFilesForDeletion()
         {
-            return OrganiseFiles.CountFilesForDeletion(toSeq(files));
+            return OrganiseFiles.CountFilesForDeletion(toSeq(ObservableState.Current.Files.Values));
         }
     }
 }

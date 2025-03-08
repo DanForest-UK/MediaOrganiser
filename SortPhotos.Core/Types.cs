@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Security.Cryptography.X509Certificates;
 using LanguageExt;
 using LanguageExt.ClassInstances;
 using LanguageExt.Common;
@@ -9,8 +10,16 @@ namespace SortPhotos.Core
 {
     public static class Types
     {
-        public record AppData(
-            MediaInfo[] Files);
+        public record AppModel(
+            Map<FileId, MediaInfo> Files);
+
+        public record FileId(int Value);
+        public record FileName(string Value);
+        public record FullPath(string Value);
+        public record Extension(string Value);
+        public record Size(long Value);
+        public record Date(DateTime Value);
+       
 
         public enum FileCategory
         {
@@ -27,13 +36,14 @@ namespace SortPhotos.Core
         }
 
         public record MediaInfo(
-            string FileName,
-            string FullPath,
-            string Extension,
-            long Size,
-            DateTime Date,
+            FileId Id,
+            FileName FileName,
+            FullPath FullPath,
+            Extension Extension,
+            Size Size,
+            Date Date,
             FileCategory Category,
-        FileState State);
+            FileState State);
 
         public record FileResponse(Seq<UserError> UserErrors, Seq<MediaInfo> Files);
     }

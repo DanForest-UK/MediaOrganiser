@@ -6,12 +6,12 @@ namespace MediaOrganiser
 {
     public partial class Form1 : Form
     {
-        private readonly MediaService _mediaService;
+        private readonly MediaService mediaService;
 
         public Form1()
         {
             InitializeComponent();
-            _mediaService = new MediaService();
+            mediaService = new MediaService();
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -52,7 +52,7 @@ namespace MediaOrganiser
                 progressScan.MarqueeAnimationSpeed = 30;
 
                 // Perform the scan
-                var result = await _mediaService.ScanDirectoryAsync(path);
+                var result = await mediaService.ScanDirectoryAsync(path);
 
                 // Process the result
                 result.Match(
@@ -71,8 +71,6 @@ namespace MediaOrganiser
                             MessageBox.Show($"Scan completed with some warnings:{Environment.NewLine}{errorMessages}",
                                 "Scan Warnings", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         }
-
-                        return fileResponse;
                     },
                     Left: error =>
                     {
@@ -81,7 +79,6 @@ namespace MediaOrganiser
                         MessageBox.Show($"An error occurred while scanning: {error.Message}",
                             "Scan Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         Debug.WriteLine($"Error details: {error}");
-                        return null;
                     });
             }
             catch (Exception ex)

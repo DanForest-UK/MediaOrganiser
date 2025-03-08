@@ -28,7 +28,7 @@ namespace SortPhotos.Logic
                     string targetDir = Path.Combine(
                         destinationBasePath,
                         file.Category == FileCategory.Image ? "Images" : "Videos",
-                        file.Date.Year.ToString());
+                        file.Date.Value.Year.ToString());
 
                     // Create directory if it doesn't exist
                     Directory.CreateDirectory(targetDir);
@@ -36,7 +36,7 @@ namespace SortPhotos.Logic
                     string targetPath = Path.Combine(targetDir, $"{file.FileName}.{file.Extension}");
 
                     // Copy file to new location
-                    File.Copy(file.FullPath, targetPath, true);
+                    File.Copy(file.FullPath.Value, targetPath, true);
                     processedCount++;
                 }
 
@@ -44,7 +44,7 @@ namespace SortPhotos.Logic
                 var binFiles = files.Where(f => f.State == FileState.Bin).ToList();
                 foreach (var file in binFiles)
                 {
-                    File.Delete(file.FullPath);
+                    File.Delete(file.FullPath.Value);
                     processedCount++;
                 }
 
