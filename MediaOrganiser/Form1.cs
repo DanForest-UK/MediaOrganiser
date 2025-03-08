@@ -11,6 +11,7 @@ namespace MediaOrganiser
     public partial class Form1 : Form
     {
         private readonly MediaService mediaService;
+        private Image? currentImage;
 
         private readonly string SettingsFilePath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -46,11 +47,74 @@ namespace MediaOrganiser
             // Update UI based on WorkInProgress state and folder availability
             btnScanFiles.Enabled = !state.WorkInProgress && state.CurrentFolder.IsSome;
             btnBrowseFolder.Enabled = !state.WorkInProgress;
+            btnBin.Enabled = !state.WorkInProgress && state.Files.Count > 0;
+            btnKeep.Enabled = !state.WorkInProgress && state.Files.Count > 0;
+            btnPrevious.Enabled = !state.WorkInProgress && state.Files.Count > 0 && state.CurrentFile.Map(i => i.Value).IfNone(0) > 1;
 
             // Update progress bar
             progressScan.Style = state.WorkInProgress ? ProgressBarStyle.Marquee : ProgressBarStyle.Blocks;
             progressScan.MarqueeAnimationSpeed = state.WorkInProgress ? 30 : 0;
             if (!state.WorkInProgress) progressScan.Value = 0;
+
+            // Update image display and navigation controls
+            UpdateImageDisplay(state);
+        }
+
+        /// <summary>
+        /// Updates the displayed image based on the current file selection
+        /// </summary>
+        void UpdateImageDisplay(AppModel state)
+        {
+            // Clear any existing image
+            if (currentImage != null)
+            {
+                currentImage.Dispose();
+                currentImage = null;
+                picCurrentImage.Image = null;
+            }
+
+            // If we have a current file, try to load and display it
+            state.CurrentFile.Match(
+                Some: fileId =>
+                {
+                    if (state.Files.ContainsKey(fileId))
+                    {
+                        var mediaInfo = state.Files[fileId];
+
+                        // Only attempt to load image files
+                        if (mediaInfo.Category == FileCategory.Image)
+                        {
+                            try
+                            {
+                                // Load the image
+                                currentImage = Image.FromFile(mediaInfo.FullPath.Value);
+                                picCurrentImage.Image = currentImage;
+
+                                // Update status with file info
+                                var fileStatus = mediaInfo.State switch
+                                {
+                                    FileState.Keep => "Keep",
+                                    FileState.Bin => "Bin",
+                                    _ => "Unprocessed"
+                                };
+
+                                UpdateStatus($"Current file: {mediaInfo.FileName.Value} - {fileStatus}");
+                            }
+                            catch (Exception ex)
+                            {
+                                Debug.WriteLine($"Error loading image: {ex.Message}");
+                                UpdateStatus($"Error loading image: {mediaInfo.FileName.Value}");
+                            }
+                        }
+                        else if (mediaInfo.Category == FileCategory.Video)
+                        {
+                            // Show placeholder for videos
+                            UpdateStatus($"Current file: {mediaInfo.FileName.Value} (Video) - cannot display preview");
+                        }
+                    }
+                },
+                None: () => UpdateStatus("No files selected")
+            );
         }
 
         private void Form1_Load(object sender, EventArgs e) => LoadLastDirectory();
@@ -64,6 +128,13 @@ namespace MediaOrganiser
             {
                 // Unsubscribe from state change events
                 ObservableState.StateChanged -= OnStateChanged;
+
+                // Dispose of any loaded image
+                if (currentImage != null)
+                {
+                    currentImage.Dispose();
+                    currentImage = null;
+                }
             }
 
             if (disposing && (components != null))
@@ -90,7 +161,7 @@ namespace MediaOrganiser
                 {
                     var lastPath = File.ReadAllText(SettingsFilePath);
                     if (lastPath.HasValue() && Directory.Exists(lastPath))
-                        MusicTools.Logic.ObservableState.SetCurrentFolder(lastPath);
+                        ObservableState.SetCurrentFolder(lastPath);
                 }
             }
             catch (Exception ex)
@@ -123,7 +194,7 @@ namespace MediaOrganiser
         private void btnBrowseFolder_Click(object sender, EventArgs e)
         {
             // Set initial folder if we have one
-            MusicTools.Logic.ObservableState.Current.CurrentFolder.Match(
+            ObservableState.Current.CurrentFolder.Match(
                 Some: folder => folderBrowserDialog.InitialDirectory = folder.Value,
                 None: () => { } // Do nothing if no folder is set
             );
@@ -131,7 +202,7 @@ namespace MediaOrganiser
             if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
             {
                 // Update the state with the new folder path
-                MusicTools.Logic.ObservableState.SetCurrentFolder(folderBrowserDialog.SelectedPath);
+                ObservableState.SetCurrentFolder(folderBrowserDialog.SelectedPath);
 
                 // Save the selected path for next time
                 SaveLastDirectory(folderBrowserDialog.SelectedPath);
@@ -139,19 +210,18 @@ namespace MediaOrganiser
         }
 
         private async void btnScanFiles_Click(object sender, EventArgs e) =>
-            await Task.Run(() =>            
+            await Task.Run(() =>
                 ObservableState.Current.CurrentFolder.Match(
                     Some: async path => await ScanDirectoryAsync(path.Value),
                     None: () => MessageBox.Show("Please select a folder first.", "No folder selected",
                         MessageBoxButtons.OK, MessageBoxIcon.Warning)));
-
 
         async Task ScanDirectoryAsync(string path)
         {
             try
             {
                 // Update state to show scanning in progress
-                MusicTools.Logic.ObservableState.SetWorkInProgress(true);
+                ObservableState.SetWorkInProgress(true);
                 UpdateStatus("Status: Scanning files..."); // Use helper method instead of direct access
 
                 // Perform the scan
@@ -194,9 +264,24 @@ namespace MediaOrganiser
             finally
             {
                 // Reset the work in progress state
-                MusicTools.Logic.ObservableState.SetWorkInProgress(false);
+                ObservableState.SetWorkInProgress(false);
             }
         }
+
+        /// <summary>
+        /// Handles the Previous button click
+        /// </summary>
+        private void btnPrevious_Click(object sender, EventArgs e) => ObservableState.PreviousFile();
+
+        /// <summary>
+        /// Handles the Bin button click
+        /// </summary>
+        private void btnBin_Click(object sender, EventArgs e) => ObservableState.UpdateFileState(FileState.Bin);
+
+        /// <summary>
+        /// Handles the Keep button click
+        /// </summary>
+        private void btnKeep_Click(object sender, EventArgs e) => ObservableState.UpdateFileState(FileState.Keep);
 
         // Helper method to safely update status label from any thread
         void UpdateStatus(string text)

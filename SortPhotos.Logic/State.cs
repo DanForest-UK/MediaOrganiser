@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Collections.Concurrent;
 using static SortPhotos.Core.Types;
+using SortPhotos.Core;
 
 namespace MusicTools.Logic
 {
@@ -33,15 +34,21 @@ namespace MusicTools.Logic
         /// </summary>
         public static void SetFiles(Seq<MediaInfo> files)
         {
-            // Ensure unique ordered Ids
-            if (files.Select(s => s.Id).Distinct().Length != files.Length)
-                files = toSeq(files.Select((s, i) => s with { Id = new FileId(i + 1) }));
+            // Set file ID by order
+            files = toSeq(files.Select((s, i) => s with { Id = new FileId(i + 1) }));
+
+            var fileMap = (from f in files
+                           select (f.Id, f)).ToMap();
 
             var newState = stateAtom.Value with
             {
-                Files = (from f in files
-                         select (f.Id, f)).ToMap()
+                Files = fileMap
             };
+
+            // Set current file to the first image if there are any
+            var firstImage = files.FirstOrDefault(f => f.Category == FileCategory.Image);
+            if (firstImage != null && newState.CurrentFile.IsNone)
+                newState = newState with { CurrentFile = Option<FileId>.Some(firstImage.Id) };
 
             Update(newState);
         }
@@ -56,12 +63,78 @@ namespace MusicTools.Logic
         /// Sets the current folder path
         /// </summary>
         public static void SetCurrentFolder(string? path) =>
+            Update(stateAtom.Value with { CurrentFolder = Optional(path).Map(p => new FolderPath(p)) });
+           
+        /// <summary>
+        /// Sets the current file to display
+        /// </summary>
+        public static void SetCurrentFile(FileId fileId) =>
             Update(stateAtom.Value with
             {
-                CurrentFolder = string.IsNullOrEmpty(path)
-                    ? Option<FolderPath>.None
-                    : Option<FolderPath>.Some(new FolderPath(path))
+                CurrentFile = Option<FileId>.Some(fileId)
             });
+
+        /// <summary>
+        /// Move to the next file in the collection
+        /// </summary>
+        public static void NextFile()
+        {
+            var current = stateAtom.Value;
+            current.CurrentFile.IfSome(currentId =>
+            {
+                // Get ordered keys
+                var keys = current.Files.Keys.OrderBy(k => k.Value).ToList();
+                var index = keys.FindIndex(k => k.Value == currentId.Value);
+
+                if (index >= 0 && index < keys.Count - 1)
+                    SetCurrentFile(keys[index + 1]);
+            });
+        }
+
+
+        /// <summary>
+        /// Move to the previous file in the collection
+        /// </summary>
+        public static void PreviousFile()
+        {
+            var current = stateAtom.Value;
+            current.CurrentFile.IfSome(currentId =>
+            {
+                // Get ordered keys
+                var keys = current.Files.Keys.OrderBy(k => k.Value).ToList();
+                var index = keys.FindIndex(k => k.Value == currentId.Value);
+
+                if (index > 0)
+                    SetCurrentFile(keys[index - 1]);
+            });
+        }
+
+        /// <summary>
+        /// Update file state and optionally move to next file
+        /// </summary>
+        public static void UpdateFileState(FileState state, bool moveToNext = true)
+        {
+            var current = stateAtom.Value;
+            current.CurrentFile.IfSome(currentId =>
+            {
+                // Get the file and update its state
+                if (current.Files.ContainsKey(currentId))
+                {
+                    var file = current.Files[currentId];
+                    var updatedFile = file with { State = state };
+
+                    // Update the state atomically
+                    Update(current with
+                    {
+                        Files = current.Files.AddOrUpdate(currentId, updatedFile)
+                    });
+
+                    // Move to next file if requested
+                    if (moveToNext)
+                        NextFile();
+                }
+            });
+        }
 
         /// <summary>
         /// Updates the entire application state atomically

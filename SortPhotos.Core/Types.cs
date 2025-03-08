@@ -13,7 +13,8 @@ namespace SortPhotos.Core
         public record AppModel(
             Map<FileId, MediaInfo> Files,
             bool WorkInProgress = false,
-            Option<FolderPath> CurrentFolder = default);
+            Option<FolderPath> CurrentFolder = default,
+            Option<FileId> CurrentFile = default);
 
         public record FileId(int Value) : IComparable<FileId>
         {
