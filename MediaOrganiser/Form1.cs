@@ -1,7 +1,10 @@
+using LanguageExt;
 using LanguageExt.Common;
 using MediaOrganiser.Services;
+using MusicTools.Logic;
 using SortPhotos.Core;
 using System.Diagnostics;
+using static SortPhotos.Core.Types;
 
 namespace MediaOrganiser
 {
@@ -18,9 +21,58 @@ namespace MediaOrganiser
         {
             InitializeComponent();
             mediaService = new MediaService();
+
+            // Subscribe to state changes
+            ObservableState.StateChanged += OnStateChanged;
+        }
+
+        /// <summary>
+        /// Updates UI components based on application state changes
+        /// </summary>
+        void OnStateChanged(object? sender, AppModel state)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(() => OnStateChanged(sender, state));
+                return;
+            }
+
+            // Update folder path display
+            state.CurrentFolder.Match(
+                Some: folder => txtFolderPath.Text = folder.Value,
+                None: () => txtFolderPath.Text = string.Empty
+            );
+
+            // Update UI based on WorkInProgress state and folder availability
+            btnScanFiles.Enabled = !state.WorkInProgress && state.CurrentFolder.IsSome;
+            btnBrowseFolder.Enabled = !state.WorkInProgress;
+
+            // Update progress bar
+            progressScan.Style = state.WorkInProgress ? ProgressBarStyle.Marquee : ProgressBarStyle.Blocks;
+            progressScan.MarqueeAnimationSpeed = state.WorkInProgress ? 30 : 0;
+            if (!state.WorkInProgress) progressScan.Value = 0;
         }
 
         private void Form1_Load(object sender, EventArgs e) => LoadLastDirectory();
+
+        /// <summary>
+        /// Clean up resources and unsubscribe from events
+        /// </summary>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                // Unsubscribe from state change events
+                ObservableState.StateChanged -= OnStateChanged;
+            }
+
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
 
         /// <summary>
         /// Loads the last used directory path from settings
@@ -38,10 +90,7 @@ namespace MediaOrganiser
                 {
                     var lastPath = File.ReadAllText(SettingsFilePath);
                     if (lastPath.HasValue() && Directory.Exists(lastPath))
-                    {
-                        txtFolderPath.Text = lastPath;
-                        btnScanFiles.Enabled = true;
-                    }
+                        MusicTools.Logic.ObservableState.SetCurrentFolder(lastPath);
                 }
             }
             catch (Exception ex)
@@ -74,44 +123,36 @@ namespace MediaOrganiser
         private void btnBrowseFolder_Click(object sender, EventArgs e)
         {
             // Set initial folder if we have one
-            if (!string.IsNullOrEmpty(txtFolderPath.Text) && Directory.Exists(txtFolderPath.Text))
-                folderBrowserDialog.InitialDirectory = txtFolderPath.Text;
+            MusicTools.Logic.ObservableState.Current.CurrentFolder.Match(
+                Some: folder => folderBrowserDialog.InitialDirectory = folder.Value,
+                None: () => { } // Do nothing if no folder is set
+            );
 
             if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
             {
-                txtFolderPath.Text = folderBrowserDialog.SelectedPath;
-                btnScanFiles.Enabled = !string.IsNullOrEmpty(txtFolderPath.Text);
+                // Update the state with the new folder path
+                MusicTools.Logic.ObservableState.SetCurrentFolder(folderBrowserDialog.SelectedPath);
 
                 // Save the selected path for next time
                 SaveLastDirectory(folderBrowserDialog.SelectedPath);
             }
         }
 
-        private async void btnScanFiles_Click(object sender, EventArgs e)
-        {
-            if (string.IsNullOrEmpty(txtFolderPath.Text))
-            {
-                MessageBox.Show("Please select a folder first.", "No folder selected",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
+        private async void btnScanFiles_Click(object sender, EventArgs e) =>
+            await Task.Run(() =>            
+                ObservableState.Current.CurrentFolder.Match(
+                    Some: async path => await ScanDirectoryAsync(path.Value),
+                    None: () => MessageBox.Show("Please select a folder first.", "No folder selected",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning)));
 
-            await ScanDirectoryAsync(txtFolderPath.Text);
-        }
 
-        /// <summary>
-        /// Performs an asynchronous scan of the specified directory
-        /// </summary>
         async Task ScanDirectoryAsync(string path)
         {
             try
             {
-                // Update UI to show scanning in progress
-                btnScanFiles.Enabled = false;
-                btnBrowseFolder.Enabled = false;
-                lblStatus.Text = "Status: Scanning files...";
-                progressScan.Style = ProgressBarStyle.Marquee;
-                progressScan.MarqueeAnimationSpeed = 30;
+                // Update state to show scanning in progress
+                MusicTools.Logic.ObservableState.SetWorkInProgress(true);
+                UpdateStatus("Status: Scanning files..."); // Use helper method instead of direct access
 
                 // Perform the scan
                 var result = await mediaService.ScanDirectoryAsync(path);
@@ -121,23 +162,23 @@ namespace MediaOrganiser
                     Right: fileResponse =>
                     {
                         // Handle success
-                        var fileCount = fileResponse.Files.Count();
-                        lblStatus.Text = $"Status: Found {fileCount} media files.";
+                        var fileCount = fileResponse.Files.Length;
+                        UpdateStatus($"Status: Found {fileCount} media files."); // Use helper method
 
-                        if (fileResponse.UserErrors.Count() > 0)
+                        if (fileResponse.UserErrors.Length > 0)
                         {
                             var errorMessages = string.Join(Environment.NewLine,
                                 fileResponse.UserErrors.Select(ue => ue.message));
 
-                            MessageBox.Show($"Scan completed with some warnings:{Environment.NewLine}{errorMessages}",
+                            ShowMessageBox($"Scan completed with some warnings:{Environment.NewLine}{errorMessages}",
                                 "Scan Warnings", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         }
                     },
                     Left: error =>
                     {
                         // Handle error
-                        lblStatus.Text = "Status: Error during scan.";
-                        MessageBox.Show($"An error occurred while scanning: {error.Message}",
+                        UpdateStatus("Status: Error during scan."); // Use helper method
+                        ShowMessageBox($"An error occurred while scanning: {error.Message}",
                             "Scan Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         Debug.WriteLine($"Error details: {error}");
                     });
@@ -145,20 +186,34 @@ namespace MediaOrganiser
             catch (Exception ex)
             {
                 // Handle unexpected exceptions
-                lblStatus.Text = "Status: Error during scan.";
-                MessageBox.Show($"An unexpected error occurred: {ex.Message}",
+                UpdateStatus("Status: Error during scan."); // Use helper method
+                ShowMessageBox($"An unexpected error occurred: {ex.Message}",
                     "Unexpected Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 Debug.WriteLine($"Exception details: {ex}");
             }
             finally
             {
-                // Re-enable the controls
-                btnScanFiles.Enabled = !string.IsNullOrEmpty(txtFolderPath.Text);
-                btnBrowseFolder.Enabled = true;
-                progressScan.Style = ProgressBarStyle.Blocks;
-                progressScan.MarqueeAnimationSpeed = 0;
-                progressScan.Value = 0;
+                // Reset the work in progress state
+                MusicTools.Logic.ObservableState.SetWorkInProgress(false);
             }
+        }
+
+        // Helper method to safely update status label from any thread
+        void UpdateStatus(string text)
+        {
+            if (lblStatus.InvokeRequired)
+                lblStatus.Invoke(() => lblStatus.Text = text);
+            else
+                lblStatus.Text = text;
+        }
+
+        // Helper method to safely show message box from any thread
+        void ShowMessageBox(string message, string caption, MessageBoxButtons buttons, MessageBoxIcon icon)
+        {
+            if (InvokeRequired)
+                Invoke(() => MessageBox.Show(this, message, caption, buttons, icon));
+            else
+                MessageBox.Show(this, message, caption, buttons, icon);
         }
     }
 }

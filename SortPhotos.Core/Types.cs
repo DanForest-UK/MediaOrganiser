@@ -11,14 +11,23 @@ namespace SortPhotos.Core
     public static class Types
     {
         public record AppModel(
-            Map<FileId, MediaInfo> Files);
+            Map<FileId, MediaInfo> Files,
+            bool WorkInProgress = false,
+            Option<FolderPath> CurrentFolder = default);
 
-        public record FileId(int Value);
+        public record FileId(int Value) : IComparable<FileId>
+        {
+            // Implement IComparable for sorting in Map type
+            public int CompareTo(FileId? other) =>
+                other is null ? 1 : Value.CompareTo(other.Value);
+        }
+
         public record FileName(string Value);
         public record FullPath(string Value);
         public record Extension(string Value);
         public record Size(long Value);
         public record Date(DateTime Value);
+        public record FolderPath(string Value);
 
         public enum FileCategory
         {

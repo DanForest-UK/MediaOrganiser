@@ -47,6 +47,23 @@ namespace MusicTools.Logic
         }
 
         /// <summary>
+        /// Sets the work in progress state
+        /// </summary>
+        public static void SetWorkInProgress(bool isInProgress) =>
+            Update(stateAtom.Value with { WorkInProgress = isInProgress });
+
+        /// <summary>
+        /// Sets the current folder path
+        /// </summary>
+        public static void SetCurrentFolder(string? path) =>
+            Update(stateAtom.Value with
+            {
+                CurrentFolder = string.IsNullOrEmpty(path)
+                    ? Option<FolderPath>.None
+                    : Option<FolderPath>.Some(new FolderPath(path))
+            });
+
+        /// <summary>
         /// Updates the entire application state atomically
         /// </summary>
         public static void Update(AppModel newState)
