@@ -28,6 +28,7 @@
             btnKeep = new Button();
             pnlButtons = new Panel();
             pnlCenterButtons = new Panel();
+            btnOrganiseFiles = new Button();
             ((System.ComponentModel.ISupportInitialize)picCurrentImage).BeginInit();
             pnlButtons.SuspendLayout();
             pnlCenterButtons.SuspendLayout();
@@ -74,10 +75,10 @@
             // 
             // lblStatus
             // 
-            lblStatus.AutoSize = true;
+            lblStatus.AutoSize = false;
             lblStatus.Location = new Point(50, 943);
             lblStatus.Name = "lblStatus";
-            lblStatus.Size = new Size(78, 32);
+            lblStatus.Size = new Size(1980, 32); // Wider to accommodate more text
             lblStatus.TabIndex = 5;
             lblStatus.Text = "Ready";
             // 
@@ -145,11 +146,24 @@
             pnlButtons.Size = new Size(2151, 60);
             pnlButtons.TabIndex = 7;
             // 
+            // btnOrganiseFiles
+            // 
+            btnOrganiseFiles.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            btnOrganiseFiles.Enabled = false;
+            btnOrganiseFiles.Location = new Point(2051, 943);
+            btnOrganiseFiles.Name = "btnOrganiseFiles";
+            btnOrganiseFiles.Size = new Size(150, 46);
+            btnOrganiseFiles.TabIndex = 8;
+            btnOrganiseFiles.Text = "Organise Files";
+            btnOrganiseFiles.UseVisualStyleBackColor = true;
+            btnOrganiseFiles.Click += btnOrganiseFiles_Click;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(13F, 32F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(2235, 1061);
+            Controls.Add(btnOrganiseFiles);
             Controls.Add(pnlButtons);
             Controls.Add(picCurrentImage);
             Controls.Add(lblStatus);
@@ -181,5 +195,6 @@
         private Button btnKeep;
         private Button btnBin;
         private Button btnPrevious;
+        private Button btnOrganiseFiles;
     }
 }

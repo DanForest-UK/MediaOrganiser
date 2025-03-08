@@ -49,6 +49,6 @@ namespace MediaOrganiser.Services
         /// Counts files marked for deletion
         /// </summary>
         public int CountFilesForDeletion() =>
-            OrganiseFiles.CountFilesForDeletion(toSeq(ObservableState.Current.Files.Values));
+            ObservableState.Current.Files.Values.Count(f => f.State == FileState.Bin);
     }
 }

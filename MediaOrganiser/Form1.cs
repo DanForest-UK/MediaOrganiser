@@ -55,6 +55,9 @@ namespace MediaOrganiser
         /// <summary>
         /// Updates UI components based on application state changes
         /// </summary>
+        /// <summary>
+        /// Updates UI components based on application state changes
+        /// </summary>
         void OnStateChanged(object? sender, AppModel state)
         {
             if (InvokeRequired)
@@ -75,6 +78,11 @@ namespace MediaOrganiser
             btnBin.Enabled = !state.WorkInProgress && state.Files.Count > 0;
             btnKeep.Enabled = !state.WorkInProgress && state.Files.Count > 0;
             btnPrevious.Enabled = !state.WorkInProgress && state.Files.Count > 0 && state.CurrentFile.Map(i => i.Value).IfNone(0) > 1;
+
+            // Enable Organise Files button if we have files with Keep or Bin state and not working
+            var hasFilesToOrganise = !state.WorkInProgress &&
+                state.Files.Values.Any(f => f.State == FileState.Keep || f.State == FileState.Bin);
+            btnOrganiseFiles.Enabled = hasFilesToOrganise;
 
             // Update progress bar
             progressScan.Style = state.WorkInProgress ? ProgressBarStyle.Marquee : ProgressBarStyle.Blocks;
@@ -106,20 +114,32 @@ namespace MediaOrganiser
                         _ => "Unprocessed"
                     };
 
+                    var fileSizeText = FormatFileSize(mediaInfo.Size.Value);
+
                     if (mediaInfo.Category == FileCategory.Image)
                     {
                         DisplayImage(mediaInfo);
-                        UpdateStatus($"Current file: {mediaInfo.FileName.Value} - {fileStatus}");
+                        UpdateStatus($"Current file: {mediaInfo.FileName.Value} ({fileSizeText}) - {fileStatus}");
                     }
                     else if (mediaInfo.Category == FileCategory.Video)
                     {
                         DisplayVideo(mediaInfo);
-                        UpdateStatus($"Current file: {mediaInfo.FileName.Value} (Video) - {fileStatus}");
+                        UpdateStatus($"Current file: {mediaInfo.FileName.Value} (Video, {fileSizeText}) - {fileStatus}");
                     }
                 },
                 None: () => UpdateStatus("No files selected")
             );
         }
+
+
+
+        /// <summary>
+        /// Formats file size as KB or MB based on size
+        /// </summary>
+        string FormatFileSize(long bytes) =>
+            bytes < 1024 * 1024
+                ? $"{bytes / 1024.0:F1} KB"
+                : $"{bytes / (1024.0 * 1024.0):F2} MB";
 
         /// <summary>
         /// Displays an image file
@@ -365,6 +385,87 @@ namespace MediaOrganiser
         }
 
         /// <summary>
+        /// Handles the Organise Files button click
+        /// </summary>
+        private async void btnOrganiseFiles_Click(object sender, EventArgs e)
+        {
+            // Only proceed if we have files to organise
+            var files = ObservableState.Current.Files.Values.Where(f => f.State != FileState.Unprocessed);
+            var fileCount = files.Count();
+
+            if (fileCount == 0)
+            {
+                ShowMessageBox("No files marked for keeping or deletion.",
+                    "No Files to Organise", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            // Ask for confirmation before proceeding
+            var binCount = mediaService.CountFilesForDeletion();
+            var keepCount = fileCount - binCount;
+
+            var confirmMessage = $"You are about to:{Environment.NewLine}{Environment.NewLine}" +
+                $"• Organise {keepCount} file(s) marked for keeping{Environment.NewLine}" +
+                $"• Delete {binCount} file(s) marked for deletion{Environment.NewLine}{Environment.NewLine}" +
+                "Do you want to continue?";
+
+            var confirmResult = MessageBox.Show(this, confirmMessage,
+                "Confirm Organisation", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+            if (confirmResult != DialogResult.Yes)
+                return;
+
+            // Get destination folder
+            var destinationDialog = new FolderBrowserDialog
+            {
+                Description = "Select destination folder for organised files",
+                UseDescriptionForTitle = true
+            };
+
+            if (destinationDialog.ShowDialog() != DialogResult.OK)
+                return;
+
+            var destinationPath = destinationDialog.SelectedPath;
+
+            try
+            {
+                // Update state to show work in progress
+                ObservableState.SetWorkInProgress(true);
+                UpdateStatus("Status: Organising files...");
+
+                // Call the organize method
+                var result = await mediaService.OrganizeFilesAsync(destinationPath);
+
+                // Process the result
+                result.Match(
+                    Right: count => {
+                        UpdateStatus($"Status: Successfully organised {count} files.");
+                        ShowMessageBox($"Successfully organised {count} files.",
+                            "Organisation Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    },
+                    Left: error => {
+                        UpdateStatus("Status: Error during file organisation.");
+                        ShowMessageBox($"An error occurred: {error.Message}",
+                            "Organisation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        Debug.WriteLine($"Error details: {error}");
+                    });
+            }
+            catch (Exception ex)
+            {
+                // Handle unexpected exceptions
+                UpdateStatus("Status: Unexpected error during file organisation.");
+                ShowMessageBox($"An unexpected error occurred: {ex.Message}",
+                    "Unexpected Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Debug.WriteLine($"Exception details: {ex}");
+            }
+            finally
+            {
+                // Reset the work in progress state
+                ObservableState.SetWorkInProgress(false);
+            }
+        }
+
+        /// <summary>
         /// Handles the Previous button click
         /// </summary>
         private void btnPrevious_Click(object sender, EventArgs e) => ObservableState.PreviousFile();
@@ -378,6 +479,8 @@ namespace MediaOrganiser
         /// Handles the Keep button click
         /// </summary>
         private void btnKeep_Click(object sender, EventArgs e) => ObservableState.UpdateFileState(FileState.Keep);
+
+        // Helper methods for thread-safe UI updates
 
         // Helper methods for thread-safe UI updates
 

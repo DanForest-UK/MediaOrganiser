@@ -33,10 +33,10 @@ namespace SortPhotos.Logic
                     // Create directory if it doesn't exist
                     Directory.CreateDirectory(targetDir);
 
-                    var targetPath = Path.Combine(targetDir, $"{file.FileName}.{file.Extension}");
+                    var targetPath = Path.Combine(targetDir, $"{file.FileName.Value}.{file.Extension.Value}");
 
                     // Copy file to new location
-                    File.Copy(file.FullPath.Value, targetPath, true);
+                    File.Move(file.FullPath.Value, targetPath, true);
                     processedCount++;
                 }
 

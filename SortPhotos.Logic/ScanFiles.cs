@@ -54,7 +54,7 @@ namespace SortPhotos.Logic
                     new FullPath(path),
                     new Extension(extension),
                     new Size(fileInfo.Length),
-                    new Date(fileInfo.CreationTime),
+                    new Date(fileInfo.LastWriteTime), // todo take earliest of all dates
                     Enumerable.Contains(ImageExtensions, extension)
                         ? FileCategory.Image
                         : FileCategory.Video,
