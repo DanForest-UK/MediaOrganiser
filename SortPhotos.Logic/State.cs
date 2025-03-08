@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Collections.Concurrent;
 using static SortPhotos.Core.Types;
 using SortPhotos.Core;
+using LanguageExt.Core;
 
 namespace MusicTools.Logic
 {
@@ -40,9 +41,12 @@ namespace MusicTools.Logic
             var fileMap = (from f in files
                            select (f.Id, f)).ToMap();
 
-            var newState = stateAtom.Value with
-            {
-                Files = fileMap
+            var newState = stateAtom.Value with 
+            { 
+                Files = fileMap, 
+                CurrentFile = files.Length > 0
+                    ? files.First().Id
+                    : None
             };
 
             // Set current file to the first image if there are any

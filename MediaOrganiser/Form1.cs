@@ -4,16 +4,21 @@ using MediaOrganiser.Services;
 using MusicTools.Logic;
 using SortPhotos.Core;
 using System.Diagnostics;
+using System.IO;
+using System.Windows.Forms;
 using static SortPhotos.Core.Types;
 
 namespace MediaOrganiser
 {
     public partial class Form1 : Form
     {
-        private readonly MediaService mediaService;
-        private Image? currentImage;
+        readonly MediaService mediaService;
+        Image? currentImage;
 
-        private readonly string SettingsFilePath = Path.Combine(
+        // Modern video player control
+        VideoPlayerControl? videoPlayer;
+
+        readonly string SettingsFilePath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "MediaOrganiser",
             "settings.json");
@@ -23,8 +28,28 @@ namespace MediaOrganiser
             InitializeComponent();
             mediaService = new MediaService();
 
-            // Subscribe to state changes
+            // Subscribe to state changes and initialize video player
             ObservableState.StateChanged += OnStateChanged;
+            InitializeVideoPlayer();
+        }
+
+        /// <summary>
+        /// Initializes the video player control
+        /// </summary>
+        void InitializeVideoPlayer()
+        {
+            try
+            {
+                videoPlayer = new VideoPlayerControl();
+                videoPlayer.Dock = DockStyle.Fill;
+                videoPlayer.Visible = false;
+                picCurrentImage.Controls.Add(videoPlayer);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error initializing video player: {ex.Message}");
+                UpdateStatus("Error: Video player could not be initialized");
+            }
         }
 
         /// <summary>
@@ -57,64 +82,122 @@ namespace MediaOrganiser
             if (!state.WorkInProgress) progressScan.Value = 0;
 
             // Update image display and navigation controls
-            UpdateImageDisplay(state);
+            UpdateMediaDisplay(state);
         }
 
         /// <summary>
-        /// Updates the displayed image based on the current file selection
+        /// Updates the displayed media based on the current file selection
         /// </summary>
-        void UpdateImageDisplay(AppModel state)
+        void UpdateMediaDisplay(AppModel state)
         {
-            // Clear any existing image
+            // Stop any playing media
+            StopMedia();
+
+            // If we have a current file, try to load and display it
+            state.CurrentFile.Match(
+                Some: fileId => {
+                    if (!state.Files.ContainsKey(fileId)) return;
+
+                    var mediaInfo = state.Files[fileId];
+                    var fileStatus = mediaInfo.State switch
+                    {
+                        FileState.Keep => "Keep",
+                        FileState.Bin => "Bin",
+                        _ => "Unprocessed"
+                    };
+
+                    if (mediaInfo.Category == FileCategory.Image)
+                    {
+                        DisplayImage(mediaInfo);
+                        UpdateStatus($"Current file: {mediaInfo.FileName.Value} - {fileStatus}");
+                    }
+                    else if (mediaInfo.Category == FileCategory.Video)
+                    {
+                        DisplayVideo(mediaInfo);
+                        UpdateStatus($"Current file: {mediaInfo.FileName.Value} (Video) - {fileStatus}");
+                    }
+                },
+                None: () => UpdateStatus("No files selected")
+            );
+        }
+
+        /// <summary>
+        /// Displays an image file
+        /// </summary>
+        void DisplayImage(MediaInfo mediaInfo)
+        {
+            try
+            {
+                // Hide video player, show picture box
+                if (videoPlayer != null) videoPlayer.Visible = false;
+                picCurrentImage.Visible = true;
+
+                // Dispose current image if exists
+                if (currentImage != null)
+                {
+                    currentImage.Dispose();
+                    currentImage = null;
+                }
+
+                // Load and display the new image
+                currentImage = Image.FromFile(mediaInfo.FullPath.Value);
+                picCurrentImage.Image = currentImage;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error loading image: {ex.Message}");
+                UpdateStatus($"Error loading image: {mediaInfo.FileName.Value}");
+            }
+        }
+
+        /// <summary>
+        /// Displays and plays a video file
+        /// </summary>
+        void DisplayVideo(MediaInfo mediaInfo)
+        {
+            try
+            {
+                // Hide picture box image
+                picCurrentImage.Image = null;
+
+                // Play the video if video player exists
+                if (videoPlayer != null)
+                {
+                    videoPlayer.Visible = true;
+                    videoPlayer.SetSource(mediaInfo.FullPath.Value);
+                    videoPlayer.Play();
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error playing video: {ex.Message}");
+                UpdateStatus($"Error playing video: {mediaInfo.FileName.Value}");
+            }
+        }
+
+        /// <summary>
+        /// Stops any currently playing media
+        /// </summary>
+        void StopMedia()
+        {
+            // Stop any playing video
+            if (videoPlayer != null && videoPlayer.Visible)
+                try
+                {
+                    videoPlayer.Stop();
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error stopping media: {ex.Message}");
+                }
+
+            // Clear any loaded image
             if (currentImage != null)
             {
                 currentImage.Dispose();
                 currentImage = null;
                 picCurrentImage.Image = null;
             }
-
-            // If we have a current file, try to load and display it
-            state.CurrentFile.Match(
-                Some: fileId =>
-                {
-                    if (state.Files.ContainsKey(fileId))
-                    {
-                        var mediaInfo = state.Files[fileId];
-
-                        // Only attempt to load image files
-                        if (mediaInfo.Category == FileCategory.Image)
-                        {
-                            try
-                            {
-                                // Load the image
-                                currentImage = Image.FromFile(mediaInfo.FullPath.Value);
-                                picCurrentImage.Image = currentImage;
-
-                                // Update status with file info
-                                var fileStatus = mediaInfo.State switch
-                                {
-                                    FileState.Keep => "Keep",
-                                    FileState.Bin => "Bin",
-                                    _ => "Unprocessed"
-                                };
-
-                                UpdateStatus($"Current file: {mediaInfo.FileName.Value} - {fileStatus}");
-                            }
-                            catch (Exception ex)
-                            {
-                                Debug.WriteLine($"Error loading image: {ex.Message}");
-                                UpdateStatus($"Error loading image: {mediaInfo.FileName.Value}");
-                            }
-                        }
-                        else if (mediaInfo.Category == FileCategory.Video)
-                        {
-                            // Show placeholder for videos
-                            UpdateStatus($"Current file: {mediaInfo.FileName.Value} (Video) - cannot display preview");
-                        }
-                    }
-                },
-                None: () => UpdateStatus("No files selected")
-            );
         }
 
         private void Form1_Load(object sender, EventArgs e) => LoadLastDirectory();
@@ -135,12 +218,25 @@ namespace MediaOrganiser
                     currentImage.Dispose();
                     currentImage = null;
                 }
+
+                // Clean up video player
+                if (videoPlayer != null)
+                {
+                    try
+                    {
+                        videoPlayer.Stop();
+                        videoPlayer.Dispose();
+                        videoPlayer = null;
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Error disposing video player: {ex.Message}");
+                    }
+                }
             }
 
             if (disposing && (components != null))
-            {
                 components.Dispose();
-            }
 
             base.Dispose(disposing);
         }
@@ -213,8 +309,10 @@ namespace MediaOrganiser
             await Task.Run(() =>
                 ObservableState.Current.CurrentFolder.Match(
                     Some: async path => await ScanDirectoryAsync(path.Value),
-                    None: () => MessageBox.Show("Please select a folder first.", "No folder selected",
-                        MessageBoxButtons.OK, MessageBoxIcon.Warning)));
+                    None: () => MessageBox.Show("Please select a folder first.",
+                                               "No folder selected",
+                                               MessageBoxButtons.OK,
+                                               MessageBoxIcon.Warning)));
 
         async Task ScanDirectoryAsync(string path)
         {
@@ -222,18 +320,17 @@ namespace MediaOrganiser
             {
                 // Update state to show scanning in progress
                 ObservableState.SetWorkInProgress(true);
-                UpdateStatus("Status: Scanning files..."); // Use helper method instead of direct access
+                UpdateStatus("Status: Scanning files...");
 
                 // Perform the scan
                 var result = await mediaService.ScanDirectoryAsync(path);
 
                 // Process the result
                 result.Match(
-                    Right: fileResponse =>
-                    {
+                    Right: fileResponse => {
                         // Handle success
                         var fileCount = fileResponse.Files.Length;
-                        UpdateStatus($"Status: Found {fileCount} media files."); // Use helper method
+                        UpdateStatus($"Status: Found {fileCount} media files.");
 
                         if (fileResponse.UserErrors.Length > 0)
                         {
@@ -244,10 +341,9 @@ namespace MediaOrganiser
                                 "Scan Warnings", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         }
                     },
-                    Left: error =>
-                    {
+                    Left: error => {
                         // Handle error
-                        UpdateStatus("Status: Error during scan."); // Use helper method
+                        UpdateStatus("Status: Error during scan.");
                         ShowMessageBox($"An error occurred while scanning: {error.Message}",
                             "Scan Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         Debug.WriteLine($"Error details: {error}");
@@ -256,7 +352,7 @@ namespace MediaOrganiser
             catch (Exception ex)
             {
                 // Handle unexpected exceptions
-                UpdateStatus("Status: Error during scan."); // Use helper method
+                UpdateStatus("Status: Error during scan.");
                 ShowMessageBox($"An unexpected error occurred: {ex.Message}",
                     "Unexpected Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 Debug.WriteLine($"Exception details: {ex}");
@@ -283,7 +379,8 @@ namespace MediaOrganiser
         /// </summary>
         private void btnKeep_Click(object sender, EventArgs e) => ObservableState.UpdateFileState(FileState.Keep);
 
-        // Helper method to safely update status label from any thread
+        // Helper methods for thread-safe UI updates
+
         void UpdateStatus(string text)
         {
             if (lblStatus.InvokeRequired)
@@ -292,7 +389,6 @@ namespace MediaOrganiser
                 lblStatus.Text = text;
         }
 
-        // Helper method to safely show message box from any thread
         void ShowMessageBox(string message, string caption, MessageBoxButtons buttons, MessageBoxIcon icon)
         {
             if (InvokeRequired)
