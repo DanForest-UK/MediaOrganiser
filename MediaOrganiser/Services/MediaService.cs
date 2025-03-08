@@ -14,8 +14,7 @@ namespace MediaOrganiser.Services
 {
     public class MediaService
     {
-        private List<MediaInfo> allFiles = new List<MediaInfo>();
-        private List<MediaInfo> displayedFiles = new List<MediaInfo>();
+        private Seq<MediaInfo> files = new Seq<MediaInfo>();
 
         /// <summary>
         /// Scans the specified directory for media files
@@ -26,8 +25,7 @@ namespace MediaOrganiser.Services
             {
 
                 var result = ScanFiles.DoScanFiles(path).Run();
-                allFiles.AddRange(result.Files);
-                displayedFiles.AddRange(result.Files);
+                files = result.Files;
                 return result!;
             }
             catch (ManyExceptions many)
@@ -45,53 +43,12 @@ namespace MediaOrganiser.Services
             }
         }
 
-
-        /// <summary>
-        /// Updates the state of a file
-        /// </summary>
-        public MediaInfo UpdateFileState(string fullPath, FileState newState)
-        {
-            // Find the file in the all files collection
-            var fileIndex = allFiles.FindIndex(f => f.FullPath == fullPath);
-            if (fileIndex >= 0)
-            {
-                // Create updated file with new state
-                var updatedFile = allFiles[fileIndex] with { State = newState };
-
-                // Update in collections
-                allFiles[fileIndex] = updatedFile;
-
-                // Remove from displayed files
-                displayedFiles.RemoveAll(f => f.FullPath == fullPath);
-
-                return updatedFile;
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Get files that need to be processed
-        /// </summary>
-        public IEnumerable<MediaInfo> GetFilesToProcess()
-        {
-            return allFiles;
-        }
-
-        /// <summary>
-        /// Get displayed files
-        /// </summary>
-        public IEnumerable<MediaInfo> GetDisplayedFiles()
-        {
-            return displayedFiles;
-        }
-
-        /// <summary>
+          /// <summary>
         /// Organizes the files based on their state
         /// </summary>
         public async Task<Either<Error, int>> OrganizeFilesAsync(string destinationPath)
         {
-            return await OrganiseFiles.OrganizeFilesAsync(toSeq(allFiles), destinationPath); // todo why ToSeq() not working
+            return await OrganiseFiles.OrganizeFilesAsync(toSeq(files), destinationPath); 
         }
 
         /// <summary>
@@ -99,7 +56,7 @@ namespace MediaOrganiser.Services
         /// </summary>
         public int CountFilesForDeletion()
         {
-            return OrganiseFiles.CountFilesForDeletion(toSeq(allFiles));
+            return OrganiseFiles.CountFilesForDeletion(toSeq(files));
         }
     }
 }
