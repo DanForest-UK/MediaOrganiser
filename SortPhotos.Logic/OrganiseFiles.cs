@@ -8,7 +8,7 @@ using LanguageExt.Common;
 using SortPhotos.Core;
 using static SortPhotos.Core.Types;
 
-namespace MediaOrganizer.Logic
+namespace SortPhotos.Logic
 {
     public static class OrganiseFiles
     {

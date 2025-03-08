@@ -1,13 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.13.35825.156 d17.13
+VisualStudioVersion = 17.13.35825.156
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SortPhotos", "SortPhotos\SortPhotos.csproj", "{6FF6268E-C07F-40FC-B560-61C1A75C9BB3}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SortPhotos.Core", "SortPhotos.Core\SortPhotos.Core.csproj", "{F68848A1-E603-4045-B8BF-DA528CBDC955}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SortPhotos.Logic", "SortPhotos.Logic\SortPhotos.Logic.csproj", "{CD2224D4-0495-4C21-819B-5F1DE64404B0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MediaOrganiser", "MediaOrganiser\MediaOrganiser.csproj", "{F57CCBD0-FB43-4845-91D2-18CC6BEC9CA5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,10 +15,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{6FF6268E-C07F-40FC-B560-61C1A75C9BB3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6FF6268E-C07F-40FC-B560-61C1A75C9BB3}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6FF6268E-C07F-40FC-B560-61C1A75C9BB3}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6FF6268E-C07F-40FC-B560-61C1A75C9BB3}.Release|Any CPU.Build.0 = Release|Any CPU
 		{F68848A1-E603-4045-B8BF-DA528CBDC955}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{F68848A1-E603-4045-B8BF-DA528CBDC955}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F68848A1-E603-4045-B8BF-DA528CBDC955}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -27,6 +23,10 @@ Global
 		{CD2224D4-0495-4C21-819B-5F1DE64404B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CD2224D4-0495-4C21-819B-5F1DE64404B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CD2224D4-0495-4C21-819B-5F1DE64404B0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F57CCBD0-FB43-4845-91D2-18CC6BEC9CA5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F57CCBD0-FB43-4845-91D2-18CC6BEC9CA5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F57CCBD0-FB43-4845-91D2-18CC6BEC9CA5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F57CCBD0-FB43-4845-91D2-18CC6BEC9CA5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -13,7 +13,7 @@ using SortPhotos.Core;
 using LanguageExt.Traits;
 using static SortPhotos.Core.UserErrors;
 
-namespace MediaOrganizer.Logic
+namespace SortPhotos.Logic
 {
     public static class ScanFiles
     {

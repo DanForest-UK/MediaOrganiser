@@ -1,15 +1,16 @@
-﻿using System;
+﻿using LanguageExt;
+using SortPhotos.Logic;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
-using LanguageExt;
-using LanguageExt.Common;
-using MediaOrganizer.Logic;
 using static SortPhotos.Core.Types;
 using static LanguageExt.Prelude;
-using System.Diagnostics;
+using LanguageExt.Common;
 
-namespace SortPhotos.Logic
+namespace MediaOrganiser.Services
 {
     public class MediaService
     {
