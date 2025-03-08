@@ -17,9 +17,8 @@ namespace SortPhotos.Logic
 {
     public static class ScanFiles
     {
-        private static readonly Seq<string> ImageExtensions = [ ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp" ];
-        private static readonly Seq<string> VideoExtensions = [ ".mp4", ".avi", ".mov", ".wmv", ".mkv", ".flv", ".webm" ];
-
+        static readonly Seq<string> ImageExtensions = [ ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp" ];
+        static readonly Seq<string> VideoExtensions = [ ".mp4", ".avi", ".mov", ".wmv", ".mkv", ".flv", ".webm" ];
 
         public static IO<FileResponse> DoScanFiles(string path) =>
              (from extensions in IO.pure(ImageExtensions.Concat(VideoExtensions))
@@ -33,14 +32,14 @@ namespace SortPhotos.Logic
               from _ in separatedErrors.Unexpected.Traverse(IO.fail<FileResponse>)             
               select new FileResponse(separatedErrors.User, infos.Succs)).Safe();
 
-        private static IO<Seq<string>> GetFilesWithExtension(string path, string extension) =>
+        static IO<Seq<string>> GetFilesWithExtension(string path, string extension) =>
             IO.lift(env => toSeq(Directory.GetFiles(path, $"*{extension}", SearchOption.AllDirectories)))
                 | @catch(e => IO.fail<Seq<string>>(AppErrors.GetFilesError(extension, e))); // add specific unauthorised exct
 
         /// <summary>
         /// Adds file info for a file to the collection
         /// </summary>
-        private static IO<MediaInfo> CreateFileInfoAsync(string path) =>
+        static IO<MediaInfo> CreateFileInfoAsync(string path) =>
             IO.lift(env =>
             {
                 var fileInfo = new FileInfo(path);

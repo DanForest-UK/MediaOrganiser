@@ -22,7 +22,6 @@ namespace MediaOrganiser.Services
         {
             try
             {
-
                 var result = await Task.Run(() => ScanFiles.DoScanFiles(path).Run());
                 ObservableState.SetFiles(result.Files);
                 return result!;
@@ -30,11 +29,9 @@ namespace MediaOrganiser.Services
             catch (ManyExceptions many)
             {
                 foreach (var ex in many)
-                {
                     Debug.WriteLine(ex.Message);
-                }
-                return many.Errors.First().ToError();
 
+                return many.Errors.First().ToError();
             }
             catch (ErrorException e)
             {
@@ -42,20 +39,16 @@ namespace MediaOrganiser.Services
             }
         }
 
-          /// <summary>
+        /// <summary>
         /// Organizes the files based on their state
         /// </summary>
-        public async Task<Either<Error, int>> OrganizeFilesAsync(string destinationPath)
-        {
-            return await OrganiseFiles.OrganizeFilesAsync(toSeq(ObservableState.Current.Files.Values), destinationPath); 
-        }
+        public async Task<Either<Error, int>> OrganizeFilesAsync(string destinationPath) =>
+            await OrganiseFiles.OrganizeFilesAsync(toSeq(ObservableState.Current.Files.Values), destinationPath);
 
         /// <summary>
         /// Counts files marked for deletion
         /// </summary>
-        public int CountFilesForDeletion()
-        {
-            return OrganiseFiles.CountFilesForDeletion(toSeq(ObservableState.Current.Files.Values));
-        }
+        public int CountFilesForDeletion() =>
+            OrganiseFiles.CountFilesForDeletion(toSeq(ObservableState.Current.Files.Values));
     }
 }

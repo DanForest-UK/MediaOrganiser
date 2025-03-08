@@ -19,7 +19,6 @@ namespace SortPhotos.Core
         public record Extension(string Value);
         public record Size(long Value);
         public record Date(DateTime Value);
-       
 
         public enum FileCategory
         {
@@ -72,17 +71,13 @@ namespace SortPhotos.Core
 
         public static (Seq<UserError> User, Seq<Error> Unexpected) SeparateUserErrors(this Seq<Error> allErrors)
         {
-
             var separated = allErrors.Separate(err => err.Code == DisplayErrorCode);
             return (User: separated.Matched.Select(item => new UserError(item.Message)), Unexpected: separated.Unmatched);
         }
-
     }
 
     public static class UserErrors
     {
         public record UserError(string message);
     }
-
-       
 }

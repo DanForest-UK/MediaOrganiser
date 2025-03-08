@@ -20,29 +20,24 @@ namespace MediaOrganiser
             mediaService = new MediaService();
         }
 
-        private void Form1_Load(object sender, EventArgs e)
-        {
-            // Load the last used directory path
-            LoadLastDirectory();
-        }
+        private void Form1_Load(object sender, EventArgs e) => LoadLastDirectory();
 
-        private void LoadLastDirectory()
+        /// <summary>
+        /// Loads the last used directory path from settings
+        /// </summary>
+        void LoadLastDirectory()
         {
             try
             {
-                // Create directory if it doesn't exist
-                string settingsFolder = Path.GetDirectoryName(SettingsFilePath);
+                var settingsFolder = Path.GetDirectoryName(SettingsFilePath);
 
                 if (!Directory.Exists(settingsFolder))
-                {
                     Directory.CreateDirectory(settingsFolder!);
-                }
 
-                // Check if settings file exists
                 if (File.Exists(SettingsFilePath))
                 {
-                    string lastPath = File.ReadAllText(SettingsFilePath);
-                    if (!lastPath.HasValue() && Directory.Exists(lastPath))
+                    var lastPath = File.ReadAllText(SettingsFilePath);
+                    if (lastPath.HasValue() && Directory.Exists(lastPath))
                     {
                         txtFolderPath.Text = lastPath;
                         btnScanFiles.Enabled = true;
@@ -56,11 +51,14 @@ namespace MediaOrganiser
             }
         }
 
-        private void SaveLastDirectory(string path)
+        /// <summary>
+        /// Saves the current directory path to settings
+        /// </summary>
+        void SaveLastDirectory(string path)
         {
             try
             {
-                string settingsFolder = Path.GetDirectoryName(SettingsFilePath);
+                var settingsFolder = Path.GetDirectoryName(SettingsFilePath);
                 if (!Directory.Exists(settingsFolder))
                     Directory.CreateDirectory(settingsFolder!);
 
@@ -77,9 +75,7 @@ namespace MediaOrganiser
         {
             // Set initial folder if we have one
             if (!string.IsNullOrEmpty(txtFolderPath.Text) && Directory.Exists(txtFolderPath.Text))
-            {
                 folderBrowserDialog.InitialDirectory = txtFolderPath.Text;
-            }
 
             if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
             {
@@ -103,7 +99,10 @@ namespace MediaOrganiser
             await ScanDirectoryAsync(txtFolderPath.Text);
         }
 
-        private async Task ScanDirectoryAsync(string path)
+        /// <summary>
+        /// Performs an asynchronous scan of the specified directory
+        /// </summary>
+        async Task ScanDirectoryAsync(string path)
         {
             try
             {
@@ -127,7 +126,6 @@ namespace MediaOrganiser
 
                         if (fileResponse.UserErrors.Count() > 0)
                         {
-                            // Show warnings if there were user errors
                             var errorMessages = string.Join(Environment.NewLine,
                                 fileResponse.UserErrors.Select(ue => ue.message));
 
@@ -138,7 +136,7 @@ namespace MediaOrganiser
                     Left: error =>
                     {
                         // Handle error
-                        lblStatus.Text = $"Status: Error during scan.";
+                        lblStatus.Text = "Status: Error during scan.";
                         MessageBox.Show($"An error occurred while scanning: {error.Message}",
                             "Scan Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         Debug.WriteLine($"Error details: {error}");
@@ -147,7 +145,7 @@ namespace MediaOrganiser
             catch (Exception ex)
             {
                 // Handle unexpected exceptions
-                lblStatus.Text = $"Status: Error during scan.";
+                lblStatus.Text = "Status: Error during scan.";
                 MessageBox.Show($"An unexpected error occurred: {ex.Message}",
                     "Unexpected Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 Debug.WriteLine($"Exception details: {ex}");

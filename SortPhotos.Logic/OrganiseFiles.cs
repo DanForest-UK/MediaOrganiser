@@ -19,13 +19,13 @@ namespace SortPhotos.Logic
         {
             try
             {
-                int processedCount = 0;
+                var processedCount = 0;
 
                 // Process files marked for keeping
                 var keepFiles = files.Where(f => f.State == FileState.Keep).ToList();
                 foreach (var file in keepFiles)
                 {
-                    string targetDir = Path.Combine(
+                    var targetDir = Path.Combine(
                         destinationBasePath,
                         file.Category == FileCategory.Image ? "Images" : "Videos",
                         file.Date.Value.Year.ToString());
@@ -33,7 +33,7 @@ namespace SortPhotos.Logic
                     // Create directory if it doesn't exist
                     Directory.CreateDirectory(targetDir);
 
-                    string targetPath = Path.Combine(targetDir, $"{file.FileName}.{file.Extension}");
+                    var targetPath = Path.Combine(targetDir, $"{file.FileName}.{file.Extension}");
 
                     // Copy file to new location
                     File.Copy(file.FullPath.Value, targetPath, true);
@@ -57,11 +57,9 @@ namespace SortPhotos.Logic
         }
 
         /// <summary>
-        /// Counts files marked for deletion - todo move to logic
+        /// Counts files marked for deletion
         /// </summary>
-        public static int CountFilesForDeletion(Seq<MediaInfo> files)
-        {
-            return files.Count(f => f.State == FileState.Bin);
-        }
+        public static int CountFilesForDeletion(Seq<MediaInfo> files) =>
+            files.Count(f => f.State == FileState.Bin);
     }
 }

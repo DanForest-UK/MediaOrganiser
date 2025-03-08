@@ -28,16 +28,21 @@ namespace MusicTools.Logic
         /// </summary>
         public static AppModel Current => stateAtom.Value;
 
+        /// <summary>
+        /// Sets the files in the application state
+        /// </summary>
         public static void SetFiles(Seq<MediaInfo> files)
         {
             // Ensure unique ordered Ids
             if (files.Select(s => s.Id).Distinct().Length != files.Length)
-            {
                 files = toSeq(files.Select((s, i) => s with { Id = new FileId(i + 1) }));
-            }
 
-            var newState = stateAtom.Value with { Files = (from f in files
-                                                           select (f.Id, f)).ToMap()};
+            var newState = stateAtom.Value with
+            {
+                Files = (from f in files
+                         select (f.Id, f)).ToMap()
+            };
+
             Update(newState);
         }
 
