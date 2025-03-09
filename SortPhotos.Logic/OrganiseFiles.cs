@@ -56,11 +56,11 @@ namespace SortPhotos.Logic
                 var targetPath = Path.Combine(targetDir, file.FileName.Value + file.Extension.Value);
                 if (copyOnly)
                 {
-                    File.Copy(targetPath, targetDir, true);
+                    File.Copy(file.FullPath.Value, targetPath, true);
                 }
                 else
                 {
-                    File.Move(file.FullPath.Value, targetDir, true);
+                    File.Move(file.FullPath.Value, targetPath, true);
                 }
             })
             select unit;

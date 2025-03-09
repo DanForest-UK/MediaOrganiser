@@ -172,6 +172,9 @@ namespace MediaOrganiser
         /// <summary>
         /// Displays a document file
         /// </summary>
+        /// <summary>
+        /// Displays a document file
+        /// </summary>
         void DisplayDocument(MediaInfo mediaInfo)
         {
             try
@@ -193,7 +196,16 @@ namespace MediaOrganiser
                     documentViewer.BringToFront();
 
                     // Debug info
-                    Debug.WriteLine($"Loading document: {mediaInfo.FullPath.Value}");
+                    var extension = Path.GetExtension(mediaInfo.FullPath.Value).ToLower();
+                    if (extension == ".doc" || extension == ".docx")
+                    {
+                        Debug.WriteLine($"Loading Word document: {mediaInfo.FullPath.Value}");
+                    }
+                    else
+                    {
+                        Debug.WriteLine($"Loading document: {mediaInfo.FullPath.Value}");
+                    }
+
                     Debug.WriteLine($"Document viewer visible: {documentViewer.Visible}");
                     Debug.WriteLine($"Picture box visible: {picCurrentImage.Visible}");
                     Debug.WriteLine($"Document viewer size: {documentViewer.Width}x{documentViewer.Height}");
@@ -368,16 +380,20 @@ namespace MediaOrganiser
                     Debug.WriteLine($"Error stopping media: {ex.Message}");
                 }
 
-            // Hide document viewer if visible
-            if (documentViewer != null && documentViewer.Visible)
-                try
+            // Properly clean up document viewer
+            try
+            {
+                if (documentViewer != null)
                 {
-                    documentViewer.Visible = false;
+                    documentViewer.Dispose();
+                    documentViewer = null;
+                    InitializeDocumentViewer();
                 }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"Error hiding document viewer: {ex.Message}");
-                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error resetting document viewer: {ex.Message}");
+            }
 
             // Clear any loaded image
             if (currentImage != null)

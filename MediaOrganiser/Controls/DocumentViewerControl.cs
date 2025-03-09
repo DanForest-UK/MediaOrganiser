@@ -7,11 +7,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using IronPdf;
 using System.Collections.Generic;
+using Image = System.Drawing.Image;
 
 namespace MediaOrganiser
 {
     /// <summary>
     /// A document viewer control with integrated PDF display using IronPDF
+    /// and Word document rendering via conversion to PDF
     /// </summary>
     public class DocumentViewerControl : UserControl
     {
@@ -28,13 +30,16 @@ namespace MediaOrganiser
 
         // PDF rendering components
         private PdfDocument currentPdfDocument;
-        private List<System.Drawing.Image> pdfPageImages = new List<System.Drawing.Image>();
+        private Image[] pdfPageImages;
         private int currentPdfPage = 0;
         private int totalPdfPages = 0;
 
         // Current document path
         private string currentDocumentPath;
         private string currentDocumentExt;
+
+        // Temp file for Word to PDF conversion
+        private string tempPdfPath;
 
         // Synchronization context for UI thread operations
         private SynchronizationContext syncContext;
@@ -242,7 +247,7 @@ namespace MediaOrganiser
                         break;
                     case ".doc":
                     case ".docx":
-                        LoadWordDocument(filePath);
+                        LoadWordDocumentAsync(filePath);
                         break;
                     default:
                         LoadUnsupportedDocument(filePath);
@@ -295,12 +300,14 @@ namespace MediaOrganiser
                         totalPdfPages = currentPdfDocument.PageCount;
 
                         var images = currentPdfDocument.ToBitmap(150);
-                        pdfPageImages = new List<System.Drawing.Image>();
+                        var pages = new List<System.Drawing.Image>();
 
                         foreach (var img in images)
                         {
-                            pdfPageImages.Add(img);
-                        }                      
+                            pages.Add(img);
+                        }
+
+                        pdfPageImages = pages.ToArray();
 
                         // Show the first page
                         currentPdfPage = 0;
@@ -330,41 +337,72 @@ namespace MediaOrganiser
         }
 
         /// <summary>
-        /// Displays a specific page of the PDF
+        /// Loads and displays a Word document by converting it to PDF using IronPDF
         /// </summary>
-        private void ShowPdfPage(int pageIndex)
+        async void LoadWordDocumentAsync(string filePath)
         {
-            if (pdfPageImages == null || pageIndex < 0 || pageIndex >= pdfPageImages.Count)
-                return;
-
             try
             {
-                // Clean up old image if there is one
-                if (pdfPictureBox.Image != null && pdfPictureBox.Image != pdfPageImages[pageIndex])
-                {
-                    // Don't dispose the image as we're keeping them in the pdfPageImages list
-                    pdfPictureBox.Image = null;
-                }
+                SafeInvokeOnUIThread(() => {
+                    loadingLabel.Text = "Converting Word document...";
+                });
 
-                // Show the new page
-                pdfPictureBox.Image = pdfPageImages[pageIndex];
-                currentPdfPage = pageIndex;
-                lblPageInfo.Text = $"Page: {pageIndex + 1} / {totalPdfPages}";
+                // Convert and load on a background thread to keep UI responsive
+                await Task.Run(() => {
+                    try
+                    {
+                       
+                        // Convert Word to PDF using IronPDF's built-in converter
+                        var renderer = new DocxToPdfRenderer();
+                        // Render from DOCX file
+                        var pdf = renderer.RenderDocxAsPdf(filePath);
+                        var pdfDocument = PdfDocument.FromFile(filePath);
+                                        
+                        totalPdfPages = pdfDocument.PageCount;
 
-                // Update button states
-                btnPrevPage.Enabled = pageIndex > 0;
-                btnNextPage.Enabled = pageIndex < totalPdfPages - 1;
+                        var images = pdfDocument.ToBitmap(150);
+                        var pages = new List<System.Drawing.Image>();
+
+                        foreach (var img in images)
+                        {
+                            pages.Add(img);
+                        }
+
+                        pdfPageImages = pages.ToArray();
+
+                        // Show the first page
+                        currentPdfPage = 0;
+
+                        SafeInvokeOnUIThread(() => {
+                            ShowPdfPage(0);
+                            pdfPanel.Visible = true;
+                            pdfNavigationPanel.Visible = true;
+                            loadingPanel.Visible = false;
+                            Debug.WriteLine("Word document converted and loaded successfully");
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Error converting Word document: {ex.Message}");
+                        SafeInvokeOnUIThread(() => {
+                            // Fall back to external app if conversion fails
+                            CleanupPdfResources();
+                            ShowWordExternalOpenPanel(filePath);
+                        });
+                    }
+                });
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error showing PDF page: {ex.Message}");
+                Debug.WriteLine($"Word document loading error: {ex.Message}");
+                ShowErrorMessage($"Error loading Word document: {ex.Message}");
             }
         }
 
         /// <summary>
-        /// Handles Word documents - opens in external app
+        /// Creates a panel with button to open Word document externally
         /// </summary>
-        void LoadWordDocument(string filePath)
+        void ShowWordExternalOpenPanel(string filePath)
         {
             SafeInvokeOnUIThread(() => {
                 // Create a simple panel with a button to open Word doc
@@ -382,6 +420,16 @@ namespace MediaOrganiser
                     Dock = DockStyle.Top,
                     Height = 40,
                     Font = new Font(Font.FontFamily, 12, FontStyle.Bold)
+                };
+
+                Label errorLabel = new Label
+                {
+                    Text = "Unable to render document in viewer. You can open it externally:",
+                    AutoSize = false,
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    Dock = DockStyle.Top,
+                    Height = 40,
+                    Font = new Font(Font.FontFamily, 10)
                 };
 
                 Button openButton = new Button
@@ -407,13 +455,49 @@ namespace MediaOrganiser
                         (wordPanel.Height - openButton.Height) / 2);
                 };
 
+                // Add controls in reverse order for stacking
                 wordPanel.Controls.Add(openButton);
+                wordPanel.Controls.Add(errorLabel);
                 wordPanel.Controls.Add(infoLabel);
 
                 Controls.Add(wordPanel);
                 wordPanel.BringToFront();
                 loadingPanel.Visible = false;
             });
+        }
+
+        /// <summary>
+        /// Displays a specific page of the PDF
+        /// </summary>
+        private void ShowPdfPage(int pageIndex)
+        {
+            if (pageIndex < 0 || pageIndex >= pdfPageImages.Length)
+            {
+                pageIndex = 0;
+            }
+   
+            try
+            {
+                // Clean up old image if there is one
+                if (pdfPictureBox.Image != null && pdfPictureBox.Image != pdfPageImages[pageIndex])
+                {
+                    // Don't dispose the image as we're keeping them in the pdfPageImages list
+                    pdfPictureBox.Image = null;
+                }
+
+                // Show the new page
+                pdfPictureBox.Image = pdfPageImages[pageIndex];
+                currentPdfPage = pageIndex;
+                lblPageInfo.Text = $"Page: {pageIndex + 1} / {totalPdfPages}";
+
+                // Update button states
+                btnPrevPage.Enabled = pageIndex > 0;
+                btnNextPage.Enabled = pageIndex < totalPdfPages - 1;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error showing PDF page: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -515,13 +599,26 @@ namespace MediaOrganiser
                     {
                         image?.Dispose();
                     }
-                    pdfPageImages.Clear();
-                    pdfPageImages = null;
+                    pdfPageImages = new Image[0];
                 }
 
                 // Dispose the PDF document
                 currentPdfDocument?.Dispose();
                 currentPdfDocument = null;
+
+                // Delete temporary PDF if it exists
+                if (!string.IsNullOrEmpty(tempPdfPath) && File.Exists(tempPdfPath))
+                {
+                    try
+                    {
+                        File.Delete(tempPdfPath);
+                        tempPdfPath = null;
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Error deleting temporary PDF: {ex.Message}");
+                    }
+                }
 
                 // Reset page counters
                 currentPdfPage = 0;
