@@ -70,6 +70,12 @@ namespace MusicTools.Logic
             Update(stateAtom.Value with { CurrentFolder = Optional(path).Map(p => new FolderPath(p)) });
 
         /// <summary>
+        /// Sets the copy only flag
+        /// </summary>
+        public static void SetCopyOnly(bool copyOnly) =>
+            Update(stateAtom.Value with { CopyOnly = copyOnly });
+
+        /// <summary>
         /// Sets the current file to display
         /// </summary>
         public static void SetCurrentFile(FileId fileId) =>
@@ -137,6 +143,18 @@ namespace MusicTools.Logic
                     if (moveToNext)
                         NextFile();
                 }
+            });
+        }
+
+        /// <summary>
+        /// Clears all files from the application state
+        /// </summary>
+        public static void ClearFiles()
+        {
+            Update(stateAtom.Value with
+            {
+                Files = new Map<FileId, MediaInfo>(),
+                CurrentFile = None
             });
         }
 

@@ -1,73 +1,73 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using LanguageExt.Common;
 using LanguageExt;
-using LanguageExt.Common;
-using SortPhotos.Core;
+using System;
+using System.IO;
+using LanguageExt.Core;
+using static LanguageExt.Prelude;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using static SortPhotos.Core.Types;
+using SortPhotos.Core;
+using LanguageExt.Traits;
+using static SortPhotos.Core.UserErrors;
+using static SortPhotos.Core.Extensions;
 
 namespace SortPhotos.Logic
 {
     public static class OrganiseFiles
     {
+        public static IO<Seq<UserError>> DoOrganiseFiles(Seq<MediaInfo> files, string destinationBasePath, bool copyOnly) =>
+            from keep in MoveFilesToKeep(files, destinationBasePath, copyOnly)
+            from results in copyOnly
+                ? IO.pure<Seq<UserError>>(default) 
+                : DeleteFilesToBin(files)
+            select results;
+
         /// <summary>
         /// Organizes files based on their state (Keep or Bin)
         /// </summary>
-        public static async Task<Either<Error, int>> OrganizeFilesAsync(Seq<MediaInfo> files, string destinationBasePath)
-        {
-            try
+        static IO<Seq<UserError>> MoveFilesToKeep(Seq<MediaInfo> files, string destinationBasePath, bool copyOnly) =>
+            from keep in IO.pure(files.Where(f => f.State == FileState.Keep).Map(f => MoveFile(f, destinationBasePath, copyOnly)))
+            from result in keep.ExtractUserErrors()
+            select result.UserErrors;
+
+        static IO<Seq<UserError>> DeleteFilesToBin(Seq<MediaInfo> files) =>
+            from bin in IO.pure(files.Where(f => f.State == FileState.Bin).Map(f => IO.lift(() => File.Delete(f.FullPath.Value))))
+            from result in bin.ExtractUserErrors()
+            select result.UserErrors;
+
+        static string FolderName(FileCategory category) =>
+            category switch
             {
-                var processedCount = 0;
+                FileCategory.Image => "Images",
+                FileCategory.Video => "Videos",
+                FileCategory.Document => "Documents",
+                _ => "Other"
+            };
 
-                // Process files marked for keeping
-                var keepFiles = files.Where(f => f.State == FileState.Keep).ToList();
-                foreach (var file in keepFiles)
-                {
-                    var folderName = file.Category switch
-                    {
-                        FileCategory.Image => "Images",
-                        FileCategory.Video => "Videos",
-                        FileCategory.Document => "Documents",
-                        _ => "Other"
-                    };
-
-                    var targetDir = Path.Combine(
-                        destinationBasePath,
-                        folderName,
-                        file.Date.Value.Year.ToString());
-
-                    // Create directory if it doesn't exist
-                    Directory.CreateDirectory(targetDir);
-
-                    var targetPath = Path.Combine(targetDir, $"{file.FileName.Value}.{file.Extension.Value}");
-
-                    // Copy file to new location
-                    File.Move(file.FullPath.Value, targetPath, true);
-                    processedCount++;
-                }
-
-                // Process files marked for deletion
-                var binFiles = files.Where(f => f.State == FileState.Bin).ToList();
-                foreach (var file in binFiles)
-                {
-                    File.Delete(file.FullPath.Value);
-                    processedCount++;
-                }
-
-                return processedCount;
-            }
-            catch (Exception ex)
+        static IO<Unit> MoveFile(MediaInfo file, string destinationBasePath, bool copyOnly) =>
+            from directory in CreateDirectory(destinationBasePath, FolderName(file.Category), file.Date.Value.Year.ToString())
+            from folderName in IO.pure(FolderName(file.Category))
+            from targetDir in CreateDirectory(destinationBasePath, folderName, file.Date.Value.Year.ToString())
+            from targetPath in IO.lift(() =>
             {
-                return AppErrors.ThereWasAProblem(Error.New(ex.Message));
-            }
-        }
+                var targetPath = Path.Combine(targetDir, file.FileName.Value + file.Extension.Value);
+                if (copyOnly)
+                {
+                    File.Copy(targetPath, targetDir, true);
+                }
+                else
+                {
+                    File.Move(file.FullPath.Value, targetDir, true);
+                }
+            })
+            select unit;
 
-        /// <summary>
-        /// Counts files marked for deletion
-        /// </summary>
-        public static int CountFilesForDeletion(Seq<MediaInfo> files) =>
-            files.Count(f => f.State == FileState.Bin);
+        static IO<string> CreateDirectory(string destinationBasePath, string folderName, string year) =>
+            from targetDir in IO.pure(Path.Combine(destinationBasePath, folderName, year))
+            from _ in IO.lift(() => Directory.CreateDirectory(targetDir))
+            select targetDir;       
     }
 }

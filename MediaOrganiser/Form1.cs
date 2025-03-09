@@ -13,7 +13,7 @@ namespace MediaOrganiser
     public partial class Form1 : Form
     {
         readonly MediaService mediaService;
-        Image? currentImage;
+        System.Drawing.Image? currentImage;
 
         // Media player controls
         VideoPlayerControl? videoPlayer;
@@ -116,6 +116,9 @@ namespace MediaOrganiser
             progressScan.MarqueeAnimationSpeed = state.WorkInProgress ? 30 : 0;
             if (!state.WorkInProgress) progressScan.Value = 0;
 
+            // Update CopyOnly checkbox
+            chkCopyOnly.Checked = state.CopyOnly;
+
             // Update image display and navigation controls
             UpdateMediaDisplay(state);
         }
@@ -130,7 +133,8 @@ namespace MediaOrganiser
 
             // If we have a current file, try to load and display it
             state.CurrentFile.Match(
-                Some: fileId => {
+                Some: fileId =>
+                {
                     if (!state.Files.ContainsKey(fileId)) return;
 
                     var mediaInfo = state.Files[fileId];
@@ -172,17 +176,34 @@ namespace MediaOrganiser
         {
             try
             {
-                // Hide other viewers
+                // Hide other viewers but keep picCurrentImage visible
                 if (videoPlayer != null) videoPlayer.Visible = false;
                 picCurrentImage.Image = null;
-                picCurrentImage.Visible = false;
+
+                // Important: Keep picCurrentImage visible since it contains documentViewer
+                picCurrentImage.Visible = true;
+
                 if (openFolderPanel != null) openFolderPanel.Visible = false;
 
                 // Show document in viewer
                 if (documentViewer != null)
                 {
+                    // Set document viewer to visible and bring to front
                     documentViewer.Visible = true;
+                    documentViewer.BringToFront();
+
+                    // Debug info
+                    Debug.WriteLine($"Loading document: {mediaInfo.FullPath.Value}");
+                    Debug.WriteLine($"Document viewer visible: {documentViewer.Visible}");
+                    Debug.WriteLine($"Picture box visible: {picCurrentImage.Visible}");
+                    Debug.WriteLine($"Document viewer size: {documentViewer.Width}x{documentViewer.Height}");
+
+                    // Load the document
                     documentViewer.LoadDocument(mediaInfo.FullPath.Value);
+                }
+                else
+                {
+                    Debug.WriteLine("Document viewer is null");
                 }
             }
             catch (Exception ex)
@@ -203,7 +224,7 @@ namespace MediaOrganiser
                 openFolderPanel = new Panel
                 {
                     Dock = DockStyle.Fill,
-                    BackColor = Color.WhiteSmoke
+                    BackColor = System.Drawing.Color.WhiteSmoke
                 };
 
                 var errorLabel = new Label
@@ -224,7 +245,8 @@ namespace MediaOrganiser
                     Width = 200
                 };
 
-                openFolderButton.Click += (s, e) => {
+                openFolderButton.Click += (s, e) =>
+                {
                     var folderPath = Path.GetDirectoryName(mediaInfo.FullPath.Value);
                     if (Directory.Exists(folderPath))
                         Process.Start("explorer.exe", folderPath);
@@ -240,7 +262,7 @@ namespace MediaOrganiser
 
                 containerPanel.Controls.Add(openFolderButton);
                 containerPanel.Controls.Add(errorLabel);
-                containerPanel.Location = new Point(
+                containerPanel.Location = new System.Drawing.Point(
                     (openFolderPanel.Width - containerPanel.Width) / 2,
                     (openFolderPanel.Height - containerPanel.Height) / 2
                 );
@@ -291,7 +313,7 @@ namespace MediaOrganiser
                 }
 
                 // Load and display the new image
-                currentImage = Image.FromFile(mediaInfo.FullPath.Value);
+                currentImage = System.Drawing.Image.FromFile(mediaInfo.FullPath.Value);
                 picCurrentImage.Image = currentImage;
             }
             catch (Exception ex)
@@ -507,7 +529,8 @@ namespace MediaOrganiser
 
                 // Process the result
                 result.Match(
-                    Right: fileResponse => {
+                    Right: fileResponse =>
+                    {
                         // Handle success
                         var fileCount = fileResponse.Files.Length;
                         UpdateStatus($"Status: Found {fileCount} media files.");
@@ -521,7 +544,8 @@ namespace MediaOrganiser
                                 "Scan Warnings", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         }
                     },
-                    Left: error => {
+                    Left: error =>
+                    {
                         // Handle error
                         UpdateStatus("Status: Error during scan.");
                         ShowMessageBox($"An error occurred while scanning: {error.Message}",
@@ -560,14 +584,27 @@ namespace MediaOrganiser
                 return;
             }
 
-            // Ask for confirmation before proceeding
+            // Get information about the operation
             var binCount = mediaService.CountFilesForDeletion();
             var keepCount = fileCount - binCount;
+            var copyOnly = ObservableState.Current.CopyOnly;
 
-            var confirmMessage = $"You are about to:{Environment.NewLine}{Environment.NewLine}" +
-                $"• Organise {keepCount} file(s) marked for keeping{Environment.NewLine}" +
-                $"• Delete {binCount} file(s) marked for deletion{Environment.NewLine}{Environment.NewLine}" +
-                "Do you want to continue?";
+            // Ask for confirmation before proceeding - only show warning about deletion if not in copy-only mode
+            string confirmMessage;
+            if (copyOnly)
+            {
+                confirmMessage = $"You are about to:{Environment.NewLine}{Environment.NewLine}" +
+                    $"• Copy {keepCount} file(s) marked for keeping{Environment.NewLine}" +
+                    $"• No files will be deleted (Copy only mode){Environment.NewLine}{Environment.NewLine}" +
+                    "Do you want to continue?";
+            }
+            else
+            {
+                confirmMessage = $"You are about to:{Environment.NewLine}{Environment.NewLine}" +
+                    $"• Move {keepCount} file(s) marked for keeping{Environment.NewLine}" +
+                    $"• Delete {binCount} file(s) marked for deletion{Environment.NewLine}{Environment.NewLine}" +
+                    "Do you want to continue?";
+            }
 
             var confirmResult = MessageBox.Show(this, confirmMessage,
                 "Confirm Organisation", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
@@ -593,20 +630,30 @@ namespace MediaOrganiser
                 ObservableState.SetWorkInProgress(true);
                 UpdateStatus("Status: Organising files...");
 
-                // Call the organize method
                 var result = await mediaService.OrganizeFilesAsync(destinationPath);
 
                 // Process the result
                 result.Match(
-                    Right: count => {
-                        UpdateStatus($"Status: Successfully organised {count} files.");
-                        ShowMessageBox($"Successfully organised {count} files.",
-                            "Organisation Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    Right: fileResponse =>
+                    {
+                        // Handle success
+                        UpdateStatus($"Media organised.");
+
+                        if (fileResponse.UserErrors.Length > 0)
+                        {
+                            var errorMessages = string.Join(Environment.NewLine,
+                                fileResponse.UserErrors.Select(ue => ue.message));
+
+                            ShowMessageBox($"Organisation completed with some warnings:{Environment.NewLine}{errorMessages}",
+                                "Organise Warnings", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        }
                     },
-                    Left: error => {
-                        UpdateStatus("Status: Error during file organisation.");
-                        ShowMessageBox($"An error occurred: {error.Message}",
-                            "Organisation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    Left: error =>
+                    {
+                        // Handle error
+                        UpdateStatus("Status: Error during organise.");
+                        ShowMessageBox($"An error occurred while organising: {error.Message}",
+                            "Organise Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         Debug.WriteLine($"Error details: {error}");
                     });
             }
@@ -623,6 +670,14 @@ namespace MediaOrganiser
                 // Reset the work in progress state
                 ObservableState.SetWorkInProgress(false);
             }
+        }
+
+        /// <summary>
+        /// Handles the CopyOnly checkbox change
+        /// </summary>
+        private void chkCopyOnly_CheckedChanged(object sender, EventArgs e)
+        {
+            ObservableState.SetCopyOnly(chkCopyOnly.Checked);
         }
 
         /// <summary>

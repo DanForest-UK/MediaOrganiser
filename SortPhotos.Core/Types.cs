@@ -14,7 +14,8 @@ namespace SortPhotos.Core
             Map<FileId, MediaInfo> Files,
             bool WorkInProgress = false,
             Option<FolderPath> CurrentFolder = default,
-            Option<FileId> CurrentFile = default);
+            Option<FileId> CurrentFile = default,
+            bool CopyOnly = false);
 
         public record FileId(int Value) : IComparable<FileId>
         {
@@ -56,6 +57,7 @@ namespace SortPhotos.Core
             FileState State);
 
         public record FileResponse(Seq<UserError> UserErrors, Seq<MediaInfo> Files);
+        public record OrganiseResponse(Seq<UserError> UserErrors, bool success);
     }
 
     public static class AppErrors

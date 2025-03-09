@@ -3,28 +3,50 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Windows.Forms;
+using System.Threading;
+using System.Threading.Tasks;
+using IronPdf;
+using System.Collections.Generic;
 
 namespace MediaOrganiser
 {
     /// <summary>
-    /// A control for displaying document content (PDF, Word, text)
+    /// A document viewer control with integrated PDF display using IronPDF
     /// </summary>
     public class DocumentViewerControl : UserControl
     {
         // UI components
-        TextBox txtDocumentContent;
-        Panel pdfViewerPanel;
-        WebBrowser webBrowser;
+        private TextBox txtDocumentContent;
+        private Panel loadingPanel;
+        private Label loadingLabel;
+        private Panel pdfPanel;
+        private PictureBox pdfPictureBox;
+        private Panel pdfNavigationPanel;
+        private Button btnPrevPage;
+        private Button btnNextPage;
+        private Label lblPageInfo;
+
+        // PDF rendering components
+        private PdfDocument currentPdfDocument;
+        private List<System.Drawing.Image> pdfPageImages = new List<System.Drawing.Image>();
+        private int currentPdfPage = 0;
+        private int totalPdfPages = 0;
 
         // Current document path
-        string currentDocumentPath;
-        string currentDocumentExt;
+        private string currentDocumentPath;
+        private string currentDocumentExt;
+
+        // Synchronization context for UI thread operations
+        private SynchronizationContext syncContext;
 
         /// <summary>
         /// Creates and initializes the document viewer control
         /// </summary>
         public DocumentViewerControl()
         {
+            // Capture the synchronization context of the UI thread
+            syncContext = SynchronizationContext.Current ?? new SynchronizationContext();
+
             InitializeComponents();
         }
 
@@ -44,24 +66,145 @@ namespace MediaOrganiser
                 Visible = false
             };
 
-            // Create web browser for PDF and possibly Word docs
-            webBrowser = new WebBrowser
+            // Create loading indicator
+            loadingPanel = new Panel
             {
                 Dock = DockStyle.Fill,
+                Visible = false,
+                BackColor = System.Drawing.Color.White
+            };
+
+            loadingLabel = new Label
+            {
+                Text = "Loading document...",
+                AutoSize = false,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Dock = DockStyle.Fill,
+                Font = new Font(Font.FontFamily, 12)
+            };
+
+            loadingPanel.Controls.Add(loadingLabel);
+
+            // Create PDF navigation panel
+            pdfNavigationPanel = new Panel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 40,
+                BackColor = System.Drawing.Color.LightGray,
                 Visible = false
             };
 
-            // Panel for PDF viewer (can be replaced with specialized viewers)
-            pdfViewerPanel = new Panel
+            btnPrevPage = new Button
+            {
+                Text = "Previous",
+                Width = 80,
+                Height = 30,
+                Location = new System.Drawing.Point(10, 5),
+                Enabled = false
+            };
+
+            btnNextPage = new Button
+            {
+                Text = "Next",
+                Width = 80,
+                Height = 30,
+                Location = new System.Drawing.Point(100, 5),
+                Enabled = false
+            };
+
+            lblPageInfo = new Label
+            {
+                Text = "Page: 0 / 0",
+                AutoSize = true,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Location = new System.Drawing.Point(200, 10)
+            };
+
+            btnPrevPage.Click += (s, e) => ShowPdfPage(currentPdfPage - 1);
+            btnNextPage.Click += (s, e) => ShowPdfPage(currentPdfPage + 1);
+
+            pdfNavigationPanel.Controls.Add(btnPrevPage);
+            pdfNavigationPanel.Controls.Add(btnNextPage);
+            pdfNavigationPanel.Controls.Add(lblPageInfo);
+
+            // Create panel for PDF display
+            pdfPanel = new Panel
             {
                 Dock = DockStyle.Fill,
-                Visible = false
+                Visible = false,
+                BackColor = System.Drawing.Color.White
             };
+
+            pdfPictureBox = new PictureBox
+            {
+                Dock = DockStyle.Fill,
+                SizeMode = PictureBoxSizeMode.Zoom,
+                BackColor = System.Drawing.Color.White,
+                Visible = true
+            };
+
+            pdfPanel.Controls.Add(pdfPictureBox);
+
+            // Initialize the IronPdf license if you have one
+            try
+            {
+                // If you have a license, uncomment this line and add your license key
+                // IronPdf.License.LicenseKey = "YOUR-LICENSE-KEY";
+
+                // Configure IronPDF rendering
+                Installation.TempFolderPath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "MediaOrganiser", "IronPdfTemp");
+
+                // Create the directory if it doesn't exist
+                if (!Directory.Exists(Installation.TempFolderPath))
+                {
+                    Directory.CreateDirectory(Installation.TempFolderPath);
+                }
+
+                Debug.WriteLine("IronPDF initialized successfully");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error initializing IronPDF: {ex.Message}");
+            }
 
             // Add controls to this control
             Controls.Add(txtDocumentContent);
-            Controls.Add(webBrowser);
-            Controls.Add(pdfViewerPanel);
+            Controls.Add(loadingPanel);
+            Controls.Add(pdfPanel);
+            Controls.Add(pdfNavigationPanel);
+        }
+
+        /// <summary>
+        /// Safely executes an action on the UI thread
+        /// </summary>
+        private void SafeInvokeOnUIThread(Action action)
+        {
+            if (IsDisposed)
+            {
+                Debug.WriteLine("Control is disposed, not executing UI action");
+                return;
+            }
+
+            try
+            {
+                if (InvokeRequired)
+                {
+                    syncContext.Post(_ => {
+                        if (!IsDisposed)
+                            action();
+                    }, null);
+                }
+                else
+                {
+                    action();
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error invoking action on UI thread: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -71,19 +214,31 @@ namespace MediaOrganiser
         {
             try
             {
-                // Reset state
-                ResetViewers();
-
+                // Store the document path
                 currentDocumentPath = filePath;
                 currentDocumentExt = Path.GetExtension(filePath).ToLower();
 
+                // Reset state
+                ResetViewers();
+
+                // Make sure file exists
+                if (!File.Exists(filePath))
+                {
+                    ShowErrorMessage($"File not found: {filePath}");
+                    return;
+                }
+
+                // Show loading indicator while we process the document
+                loadingPanel.Visible = true;
+
+                // Process by file type
                 switch (currentDocumentExt)
                 {
                     case ".txt":
                         LoadTextDocument(filePath);
                         break;
                     case ".pdf":
-                        LoadPdfDocument(filePath);
+                        LoadPdfDocumentAsync(filePath);
                         break;
                     case ".doc":
                     case ".docx":
@@ -106,46 +261,179 @@ namespace MediaOrganiser
         /// </summary>
         void LoadTextDocument(string filePath)
         {
-            // Read text file with appropriate encoding detection
-            var text = File.ReadAllText(filePath, Encoding.UTF8);
-            txtDocumentContent.Text = text;
-            txtDocumentContent.Visible = true;
+            try
+            {
+                // Read text file with appropriate encoding detection
+                var text = File.ReadAllText(filePath, Encoding.UTF8);
+
+                SafeInvokeOnUIThread(() => {
+                    txtDocumentContent.Text = text;
+                    txtDocumentContent.Visible = true;
+                    loadingPanel.Visible = false;
+                });
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error loading text document: {ex.Message}");
+                ShowErrorMessage($"Error loading text file: {ex.Message}");
+            }
         }
 
         /// <summary>
-        /// Loads and displays a PDF document
+        /// Loads a PDF document using IronPDF
         /// </summary>
-        void LoadPdfDocument(string filePath)
+        async void LoadPdfDocumentAsync(string filePath)
         {
             try
             {
-                // Basic approach: use web browser with PDF reader
-                webBrowser.Navigate(filePath);
-                webBrowser.Visible = true;
+                // Load PDF on a background thread to keep UI responsive
+                await Task.Run(() => {
+                    try
+                    {
+                        // Load the PDF using IronPDF
+                        currentPdfDocument = new PdfDocument(filePath);
+                        totalPdfPages = currentPdfDocument.PageCount;
+
+                        var images = currentPdfDocument.ToBitmap(150);
+                        pdfPageImages = new List<System.Drawing.Image>();
+
+                        foreach (var img in images)
+                        {
+                            pdfPageImages.Add(img);
+                        }                      
+
+                        // Show the first page
+                        currentPdfPage = 0;
+
+                        SafeInvokeOnUIThread(() => {
+                            ShowPdfPage(0);
+                            pdfPanel.Visible = true;
+                            pdfNavigationPanel.Visible = true;
+                            loadingPanel.Visible = false;
+                            Debug.WriteLine("PDF loaded successfully with IronPDF");
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Error rendering PDF with IronPDF: {ex.Message}");
+                        SafeInvokeOnUIThread(() => {
+                            ShowErrorMessage($"Error rendering PDF: {ex.Message}");
+                        });
+                    }
+                });
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"PDF loading error: {ex.Message}");
-                ShowErrorMessage("PDF preview not available. You may need Adobe Reader or another PDF viewer installed.");
+                ShowErrorMessage($"Error loading PDF: {ex.Message}");
             }
         }
 
         /// <summary>
-        /// Loads and displays a Word document
+        /// Displays a specific page of the PDF
         /// </summary>
-        void LoadWordDocument(string filePath)
+        private void ShowPdfPage(int pageIndex)
         {
+            if (pdfPageImages == null || pageIndex < 0 || pageIndex >= pdfPageImages.Count)
+                return;
+
             try
             {
-                // Basic approach: For now, just use web browser's limited capabilities
-                // A more advanced approach would use a COM object or specific library
-                webBrowser.Navigate(filePath);
-                webBrowser.Visible = true;
+                // Clean up old image if there is one
+                if (pdfPictureBox.Image != null && pdfPictureBox.Image != pdfPageImages[pageIndex])
+                {
+                    // Don't dispose the image as we're keeping them in the pdfPageImages list
+                    pdfPictureBox.Image = null;
+                }
+
+                // Show the new page
+                pdfPictureBox.Image = pdfPageImages[pageIndex];
+                currentPdfPage = pageIndex;
+                lblPageInfo.Text = $"Page: {pageIndex + 1} / {totalPdfPages}";
+
+                // Update button states
+                btnPrevPage.Enabled = pageIndex > 0;
+                btnNextPage.Enabled = pageIndex < totalPdfPages - 1;
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Word document loading error: {ex.Message}");
-                ShowErrorMessage("Word document preview not available. You may need Microsoft Word installed.");
+                Debug.WriteLine($"Error showing PDF page: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Handles Word documents - opens in external app
+        /// </summary>
+        void LoadWordDocument(string filePath)
+        {
+            SafeInvokeOnUIThread(() => {
+                // Create a simple panel with a button to open Word doc
+                Panel wordPanel = new Panel
+                {
+                    Dock = DockStyle.Fill,
+                    BackColor = System.Drawing.Color.White
+                };
+
+                Label infoLabel = new Label
+                {
+                    Text = $"Word Document: {Path.GetFileName(filePath)}",
+                    AutoSize = false,
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    Dock = DockStyle.Top,
+                    Height = 40,
+                    Font = new Font(Font.FontFamily, 12, FontStyle.Bold)
+                };
+
+                Button openButton = new Button
+                {
+                    Text = "Open in Microsoft Word",
+                    Width = 200,
+                    Height = 40,
+                    Anchor = AnchorStyles.None
+                };
+
+                openButton.Click += (s, e) => OpenDocumentExternally(filePath);
+
+                // Center the button
+                openButton.Location = new System.Drawing.Point(
+                    (wordPanel.Width - openButton.Width) / 2,
+                    (wordPanel.Height - openButton.Height) / 2);
+
+                // Handle resize
+                wordPanel.Resize += (s, e) =>
+                {
+                    openButton.Location = new System.Drawing.Point(
+                        (wordPanel.Width - openButton.Width) / 2,
+                        (wordPanel.Height - openButton.Height) / 2);
+                };
+
+                wordPanel.Controls.Add(openButton);
+                wordPanel.Controls.Add(infoLabel);
+
+                Controls.Add(wordPanel);
+                wordPanel.BringToFront();
+                loadingPanel.Visible = false;
+            });
+        }
+
+        /// <summary>
+        /// Opens a document in its associated external application
+        /// </summary>
+        private void OpenDocumentExternally(string filePath)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = filePath,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error opening file externally: {ex.Message}");
+                MessageBox.Show($"Could not open the document: {ex.Message}",
+                                "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -155,6 +443,10 @@ namespace MediaOrganiser
         void LoadUnsupportedDocument(string filePath)
         {
             ShowErrorMessage($"Preview not available for {Path.GetExtension(filePath).ToUpper()} files.");
+
+            SafeInvokeOnUIThread(() => {
+                loadingPanel.Visible = false;
+            });
         }
 
         /// <summary>
@@ -162,8 +454,15 @@ namespace MediaOrganiser
         /// </summary>
         void ShowErrorMessage(string message)
         {
-            txtDocumentContent.Text = message;
-            txtDocumentContent.Visible = true;
+            Debug.WriteLine($"Document viewer error: {message}");
+
+            SafeInvokeOnUIThread(() => {
+                pdfPanel.Visible = false;
+                pdfNavigationPanel.Visible = false;
+                loadingPanel.Visible = false;
+                txtDocumentContent.Text = message;
+                txtDocumentContent.Visible = true;
+            });
         }
 
         /// <summary>
@@ -171,11 +470,67 @@ namespace MediaOrganiser
         /// </summary>
         void ResetViewers()
         {
-            txtDocumentContent.Visible = false;
-            txtDocumentContent.Text = string.Empty;
+            SafeInvokeOnUIThread(() => {
+                // Hide existing viewers
+                txtDocumentContent.Visible = false;
+                txtDocumentContent.Text = string.Empty;
+                pdfPanel.Visible = false;
+                pdfNavigationPanel.Visible = false;
 
-            webBrowser.Visible = false;
-            pdfViewerPanel.Visible = false;
+                // Clear the PDF PictureBox without disposing the image
+                if (pdfPictureBox.Image != null)
+                {
+                    pdfPictureBox.Image = null;
+                }
+
+                loadingPanel.Visible = false;
+
+                // Remove any additional panels that might have been added
+                for (int i = Controls.Count - 1; i >= 0; i--)
+                {
+                    Control control = Controls[i];
+                    if (control != txtDocumentContent &&
+                        control != pdfPanel &&
+                        control != loadingPanel &&
+                        control != pdfNavigationPanel)
+                    {
+                        Controls.RemoveAt(i);
+                        control.Dispose();
+                    }
+                }
+            });
+        }
+
+        /// <summary>
+        /// Clean up PDF resources
+        /// </summary>
+        private void CleanupPdfResources()
+        {
+            try
+            {
+                // Clean up PDF page images
+                if (pdfPageImages != null)
+                {
+                    foreach (var image in pdfPageImages)
+                    {
+                        image?.Dispose();
+                    }
+                    pdfPageImages.Clear();
+                    pdfPageImages = null;
+                }
+
+                // Dispose the PDF document
+                currentPdfDocument?.Dispose();
+                currentPdfDocument = null;
+
+                // Reset page counters
+                currentPdfPage = 0;
+                totalPdfPages = 0;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error cleaning up PDF resources: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -187,13 +542,24 @@ namespace MediaOrganiser
             {
                 try
                 {
+                    Debug.WriteLine("Disposing DocumentViewerControl");
+
                     // Close any open documents
                     ResetViewers();
 
+                    // Clean up PDF resources
+                    CleanupPdfResources();
+
                     // Dispose of controls
-                    webBrowser?.Dispose();
                     txtDocumentContent?.Dispose();
-                    pdfViewerPanel?.Dispose();
+                    loadingPanel?.Dispose();
+                    loadingLabel?.Dispose();
+                    pdfPanel?.Dispose();
+                    pdfPictureBox?.Dispose();
+                    pdfNavigationPanel?.Dispose();
+                    btnPrevPage?.Dispose();
+                    btnNextPage?.Dispose();
+                    lblPageInfo?.Dispose();
                 }
                 catch (Exception ex)
                 {

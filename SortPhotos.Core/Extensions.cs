@@ -5,6 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using static LanguageExt.Prelude;
+using static SortPhotos.Core.Types;
+using LanguageExt.Traits;
+using static SortPhotos.Core.UserErrors;
 
 namespace SortPhotos.Core
 {
@@ -33,5 +36,11 @@ namespace SortPhotos.Core
         /// </summary>
         public static IO<A> Safe<A>(this IO<A> ma) =>
             ma | @catch(e => IO.fail<A>(AppErrors.ThereWasAProblem(e)));
+
+        public static IO<(Seq<A> Succs, Seq<UserError> UserErrors)> ExtractUserErrors<A>(this Seq<IO<A>> items) =>
+            from infos in items.Partition()
+            let separatedErrors = infos.Fails.SeparateUserErrors()
+            from _ in separatedErrors.Unexpected.Traverse(IO.fail<A>)
+            select (infos.Succs, separatedErrors.User);     
     }
 }

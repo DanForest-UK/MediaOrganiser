@@ -23,15 +23,15 @@ namespace SortPhotos.Logic
 
         public static IO<FileResponse> DoScanFiles(string path) =>
              (from extensions in IO.pure(ImageExtensions.Concat(VideoExtensions).Concat(DocumentExtensions))
-              from files in extensions.Map(ext => GetFilesWithExtension(path, ext)).Partition()
-              from infos in files.Succs
-                                 .Flatten()
-                                 .Map(CreateFileInfoAsync)
-                                 .Partition()
-              let allErrors = files.Fails.Concat(infos.Fails)
-              let separatedErrors = allErrors.SeparateUserErrors()
-              from _ in separatedErrors.Unexpected.Traverse(IO.fail<FileResponse>)
-              select new FileResponse(separatedErrors.User, infos.Succs)).Safe();
+              from getFilesResult in extensions.Map(ext => GetFilesWithExtension(path, ext))
+                                               .ExtractUserErrors()
+              from getFileInfoResult in getFilesResult.Succs
+                                                      .Flatten()
+                                                      .Map(CreateFileInfoAsync)
+                                                      .ExtractUserErrors()            
+              select new FileResponse(
+                  UserErrors: getFileInfoResult.UserErrors.Concat(getFilesResult.UserErrors),
+                  Files: getFileInfoResult.Succs)).Safe();
 
         static IO<Seq<string>> GetFilesWithExtension(string path, string extension) =>
             IO.lift(env => toSeq(Directory.GetFiles(path, $"*{extension}", SearchOption.AllDirectories)))

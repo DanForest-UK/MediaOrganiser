@@ -1,4 +1,8 @@
-﻿namespace MediaOrganiser
+﻿using Color = System.Drawing.Color;
+using Point = System.Drawing.Point;
+using Size = System.Drawing.Size;
+
+namespace MediaOrganiser
 {
     partial class Form1
     {
@@ -30,6 +34,7 @@
             pnlButtons = new Panel();
             pnlCenterButtons = new Panel();
             btnOrganiseFiles = new Button();
+            chkCopyOnly = new CheckBox();
             ((System.ComponentModel.ISupportInitialize)picCurrentImage).BeginInit();
             pnlButtons.SuspendLayout();
             pnlCenterButtons.SuspendLayout();
@@ -37,9 +42,9 @@
             // 
             // btnBrowseFolder
             // 
-            btnBrowseFolder.Location = new Point(26, 28);
+            btnBrowseFolder.Location = new System.Drawing.Point(26, 28);
             btnBrowseFolder.Name = "btnBrowseFolder";
-            btnBrowseFolder.Size = new Size(150, 46);
+            btnBrowseFolder.Size = new System.Drawing.Size(150, 46);
             btnBrowseFolder.TabIndex = 0;
             btnBrowseFolder.Text = "Browse...";
             btnBrowseFolder.UseVisualStyleBackColor = true;
@@ -48,7 +53,7 @@
             // txtFolderPath
             // 
             txtFolderPath.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            txtFolderPath.Location = new Point(194, 33);
+            txtFolderPath.Location = new System.Drawing.Point(194, 33);
             txtFolderPath.Name = "txtFolderPath";
             txtFolderPath.ReadOnly = true;
             txtFolderPath.Size = new Size(1845, 39);
@@ -58,7 +63,7 @@
             // 
             btnScanFiles.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnScanFiles.Enabled = false;
-            btnScanFiles.Location = new Point(2060, 29);
+            btnScanFiles.Location = new System.Drawing.Point(2060, 29);
             btnScanFiles.Name = "btnScanFiles";
             btnScanFiles.Size = new Size(150, 46);
             btnScanFiles.TabIndex = 2;
@@ -78,7 +83,7 @@
             // 
             lblStatus.Location = new Point(50, 943);
             lblStatus.Name = "lblStatus";
-            lblStatus.Size = new Size(1980, 32);
+            lblStatus.Size = new Size(1667, 32);
             lblStatus.TabIndex = 5;
             lblStatus.Text = "Ready";
             // 
@@ -170,11 +175,24 @@
             btnOrganiseFiles.UseVisualStyleBackColor = true;
             btnOrganiseFiles.Click += btnOrganiseFiles_Click;
             // 
+            // chkCopyOnly
+            // 
+            chkCopyOnly.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            chkCopyOnly.AutoSize = true;
+            chkCopyOnly.Location = new Point(1877, 952);
+            chkCopyOnly.Name = "chkCopyOnly";
+            chkCopyOnly.Size = new Size(154, 36);
+            chkCopyOnly.TabIndex = 9;
+            chkCopyOnly.Text = "Copy only";
+            chkCopyOnly.UseVisualStyleBackColor = true;
+            chkCopyOnly.CheckedChanged += chkCopyOnly_CheckedChanged;
+            // 
             // Form1
             // 
-            AutoScaleDimensions = new SizeF(13F, 32F);
+            AutoScaleDimensions = new System.Drawing.SizeF(13F, 32F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(2235, 1061);
+            Controls.Add(chkCopyOnly);
             Controls.Add(btnOrganiseFiles);
             Controls.Add(pnlButtons);
             Controls.Add(picCurrentImage);
@@ -209,5 +227,6 @@
         private Button btnPrevious;
         private Button btnNext;
         private Button btnOrganiseFiles;
+        private CheckBox chkCopyOnly;
     }
 }
