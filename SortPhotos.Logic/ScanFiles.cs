@@ -17,11 +17,12 @@ namespace SortPhotos.Logic
 {
     public static class ScanFiles
     {
-        static readonly Seq<string> ImageExtensions = [ ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp" ];
-        static readonly Seq<string> VideoExtensions = [ ".mp4", ".avi", ".mov", ".wmv", ".mkv", ".flv", ".webm" ];
+        static readonly Seq<string> ImageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp"];
+        static readonly Seq<string> VideoExtensions = [".mp4", ".avi", ".mov", ".wmv", ".mkv", ".flv", ".webm"];
+        static readonly Seq<string> DocumentExtensions = [".pdf", ".docx", ".doc", ".txt"];
 
         public static IO<FileResponse> DoScanFiles(string path) =>
-             (from extensions in IO.pure(ImageExtensions.Concat(VideoExtensions))
+             (from extensions in IO.pure(ImageExtensions.Concat(VideoExtensions).Concat(DocumentExtensions))
               from files in extensions.Map(ext => GetFilesWithExtension(path, ext)).Partition()
               from infos in files.Succs
                                  .Flatten()
@@ -29,7 +30,7 @@ namespace SortPhotos.Logic
                                  .Partition()
               let allErrors = files.Fails.Concat(infos.Fails)
               let separatedErrors = allErrors.SeparateUserErrors()
-              from _ in separatedErrors.Unexpected.Traverse(IO.fail<FileResponse>)             
+              from _ in separatedErrors.Unexpected.Traverse(IO.fail<FileResponse>)
               select new FileResponse(separatedErrors.User, infos.Succs)).Safe();
 
         static IO<Seq<string>> GetFilesWithExtension(string path, string extension) =>
@@ -57,7 +58,11 @@ namespace SortPhotos.Logic
                     new Date(fileInfo.LastWriteTime), // todo take earliest of all dates
                     Enumerable.Contains(ImageExtensions, extension)
                         ? FileCategory.Image
-                        : FileCategory.Video,
+                        : Enumerable.Contains(VideoExtensions, extension)
+                            ? FileCategory.Video
+                            : Enumerable.Contains(DocumentExtensions, extension)
+                                ? FileCategory.Document
+                                : FileCategory.Unknown,
                     FileState.Unprocessed);
             })
             | @catch(e => IO.fail<MediaInfo>(AppErrors.ReadFileError(path, e)));

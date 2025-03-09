@@ -24,6 +24,7 @@
             lblStatus = new Label();
             picCurrentImage = new PictureBox();
             btnPrevious = new Button();
+            btnNext = new Button();
             btnBin = new Button();
             btnKeep = new Button();
             pnlButtons = new Panel();
@@ -75,10 +76,9 @@
             // 
             // lblStatus
             // 
-            lblStatus.AutoSize = false;
             lblStatus.Location = new Point(50, 943);
             lblStatus.Name = "lblStatus";
-            lblStatus.Size = new Size(1980, 32); // Wider to accommodate more text
+            lblStatus.Size = new Size(1980, 32);
             lblStatus.TabIndex = 5;
             lblStatus.Text = "Ready";
             // 
@@ -104,15 +104,16 @@
             btnPrevious.UseVisualStyleBackColor = true;
             btnPrevious.Click += btnPrevious_Click;
             // 
-            // pnlCenterButtons
+            // btnNext
             // 
-            pnlCenterButtons.Anchor = AnchorStyles.None;
-            pnlCenterButtons.Controls.Add(btnBin);
-            pnlCenterButtons.Controls.Add(btnKeep);
-            pnlCenterButtons.Location = new Point(975, 3);
-            pnlCenterButtons.Name = "pnlCenterButtons";
-            pnlCenterButtons.Size = new Size(320, 46);
-            pnlCenterButtons.TabIndex = 3;
+            btnNext.Enabled = false;
+            btnNext.Location = new Point(153, 3);
+            btnNext.Name = "btnNext";
+            btnNext.Size = new Size(150, 46);
+            btnNext.TabIndex = 1;
+            btnNext.Text = "Next";
+            btnNext.UseVisualStyleBackColor = true;
+            btnNext.Click += btnNext_Click;
             // 
             // btnBin
             // 
@@ -141,10 +142,21 @@
             pnlButtons.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             pnlButtons.Controls.Add(pnlCenterButtons);
             pnlButtons.Controls.Add(btnPrevious);
+            pnlButtons.Controls.Add(btnNext);
             pnlButtons.Location = new Point(50, 90);
             pnlButtons.Name = "pnlButtons";
             pnlButtons.Size = new Size(2151, 60);
             pnlButtons.TabIndex = 7;
+            // 
+            // pnlCenterButtons
+            // 
+            pnlCenterButtons.Anchor = AnchorStyles.None;
+            pnlCenterButtons.Controls.Add(btnBin);
+            pnlCenterButtons.Controls.Add(btnKeep);
+            pnlCenterButtons.Location = new Point(975, 3);
+            pnlCenterButtons.Name = "pnlCenterButtons";
+            pnlCenterButtons.Size = new Size(320, 46);
+            pnlCenterButtons.TabIndex = 3;
             // 
             // btnOrganiseFiles
             // 
@@ -195,6 +207,7 @@
         private Button btnKeep;
         private Button btnBin;
         private Button btnPrevious;
+        private Button btnNext;
         private Button btnOrganiseFiles;
     }
 }

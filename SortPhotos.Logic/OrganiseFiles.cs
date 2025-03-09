@@ -25,9 +25,17 @@ namespace SortPhotos.Logic
                 var keepFiles = files.Where(f => f.State == FileState.Keep).ToList();
                 foreach (var file in keepFiles)
                 {
+                    var folderName = file.Category switch
+                    {
+                        FileCategory.Image => "Images",
+                        FileCategory.Video => "Videos",
+                        FileCategory.Document => "Documents",
+                        _ => "Other"
+                    };
+
                     var targetDir = Path.Combine(
                         destinationBasePath,
-                        file.Category == FileCategory.Image ? "Images" : "Videos",
+                        folderName,
                         file.Date.Value.Year.ToString());
 
                     // Create directory if it doesn't exist

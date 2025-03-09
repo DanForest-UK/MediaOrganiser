@@ -15,8 +15,11 @@ namespace MediaOrganiser
         readonly MediaService mediaService;
         Image? currentImage;
 
-        // Modern video player control
+        // Media player controls
         VideoPlayerControl? videoPlayer;
+        DocumentViewerControl? documentViewer;
+        Panel? openFolderPanel;
+        Button? openFolderButton;
 
         readonly string SettingsFilePath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -28,9 +31,10 @@ namespace MediaOrganiser
             InitializeComponent();
             mediaService = new MediaService();
 
-            // Subscribe to state changes and initialize video player
+            // Subscribe to state changes and initialize media players
             ObservableState.StateChanged += OnStateChanged;
             InitializeVideoPlayer();
+            InitializeDocumentViewer();
         }
 
         /// <summary>
@@ -53,8 +57,24 @@ namespace MediaOrganiser
         }
 
         /// <summary>
-        /// Updates UI components based on application state changes
+        /// Initializes the document viewer control
         /// </summary>
+        void InitializeDocumentViewer()
+        {
+            try
+            {
+                documentViewer = new DocumentViewerControl();
+                documentViewer.Dock = DockStyle.Fill;
+                documentViewer.Visible = false;
+                picCurrentImage.Controls.Add(documentViewer);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error initializing document viewer: {ex.Message}");
+                UpdateStatus("Error: Document viewer could not be initialized");
+            }
+        }
+
         /// <summary>
         /// Updates UI components based on application state changes
         /// </summary>
@@ -77,7 +97,14 @@ namespace MediaOrganiser
             btnBrowseFolder.Enabled = !state.WorkInProgress;
             btnBin.Enabled = !state.WorkInProgress && state.Files.Count > 0;
             btnKeep.Enabled = !state.WorkInProgress && state.Files.Count > 0;
-            btnPrevious.Enabled = !state.WorkInProgress && state.Files.Count > 0 && state.CurrentFile.Map(i => i.Value).IfNone(0) > 1;
+
+            // Update Previous button state - enable if not first file
+            var currentFileIndex = state.CurrentFile.Map(i => i.Value).IfNone(0);
+            btnPrevious.Enabled = !state.WorkInProgress && state.Files.Count > 0 && currentFileIndex > 1;
+
+            // Update Next button state - enable if not last file
+            btnNext.Enabled = !state.WorkInProgress && state.Files.Count > 0 &&
+                             currentFileIndex > 0 && currentFileIndex < state.Files.Count;
 
             // Enable Organise Files button if we have files with Keep or Bin state and not working
             var hasFilesToOrganise = !state.WorkInProgress &&
@@ -115,23 +142,125 @@ namespace MediaOrganiser
                     };
 
                     var fileSizeText = FormatFileSize(mediaInfo.Size.Value);
+                    // Include extension in filename display
+                    var fullFileName = $"{mediaInfo.FileName.Value}.{mediaInfo.Extension.Value.TrimStart('.')}";
 
                     if (mediaInfo.Category == FileCategory.Image)
                     {
                         DisplayImage(mediaInfo);
-                        UpdateStatus($"Current file: {mediaInfo.FileName.Value} ({fileSizeText}) - {fileStatus}");
+                        UpdateStatus($"Current file: {fullFileName} ({fileSizeText}) - {fileStatus}");
                     }
                     else if (mediaInfo.Category == FileCategory.Video)
                     {
                         DisplayVideo(mediaInfo);
-                        UpdateStatus($"Current file: {mediaInfo.FileName.Value} (Video, {fileSizeText}) - {fileStatus}");
+                        UpdateStatus($"Current file: {fullFileName} (Video, {fileSizeText}) - {fileStatus}");
+                    }
+                    else if (mediaInfo.Category == FileCategory.Document)
+                    {
+                        DisplayDocument(mediaInfo);
+                        UpdateStatus($"Current file: {fullFileName} (Document, {fileSizeText}) - {fileStatus}");
                     }
                 },
                 None: () => UpdateStatus("No files selected")
             );
         }
 
+        /// <summary>
+        /// Displays a document file
+        /// </summary>
+        void DisplayDocument(MediaInfo mediaInfo)
+        {
+            try
+            {
+                // Hide other viewers
+                if (videoPlayer != null) videoPlayer.Visible = false;
+                picCurrentImage.Image = null;
+                picCurrentImage.Visible = false;
+                if (openFolderPanel != null) openFolderPanel.Visible = false;
 
+                // Show document in viewer
+                if (documentViewer != null)
+                {
+                    documentViewer.Visible = true;
+                    documentViewer.LoadDocument(mediaInfo.FullPath.Value);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error displaying document: {ex.Message}");
+                ShowErrorWithOpenFolderButton(mediaInfo);
+            }
+        }
+
+        /// <summary>
+        /// Shows error message with button to open file's directory
+        /// </summary>
+        void ShowErrorWithOpenFolderButton(MediaInfo mediaInfo)
+        {
+            // Create panel for error message and button if it doesn't exist
+            if (openFolderPanel == null)
+            {
+                openFolderPanel = new Panel
+                {
+                    Dock = DockStyle.Fill,
+                    BackColor = Color.WhiteSmoke
+                };
+
+                var errorLabel = new Label
+                {
+                    Text = "Unable to preview file",
+                    AutoSize = false,
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    Dock = DockStyle.Top,
+                    Height = 40,
+                    Font = new Font(Font.FontFamily, 12, FontStyle.Bold)
+                };
+
+                openFolderButton = new Button
+                {
+                    Text = "Open enclosing folder",
+                    Dock = DockStyle.Top,
+                    Height = 40,
+                    Width = 200
+                };
+
+                openFolderButton.Click += (s, e) => {
+                    var folderPath = Path.GetDirectoryName(mediaInfo.FullPath.Value);
+                    if (Directory.Exists(folderPath))
+                        Process.Start("explorer.exe", folderPath);
+                };
+
+                // Add controls to panel - center them
+                var containerPanel = new Panel
+                {
+                    Width = 200,
+                    Height = 100,
+                    Anchor = AnchorStyles.None
+                };
+
+                containerPanel.Controls.Add(openFolderButton);
+                containerPanel.Controls.Add(errorLabel);
+                containerPanel.Location = new Point(
+                    (openFolderPanel.Width - containerPanel.Width) / 2,
+                    (openFolderPanel.Height - containerPanel.Height) / 2
+                );
+
+                openFolderPanel.Controls.Add(containerPanel);
+                picCurrentImage.Controls.Add(openFolderPanel);
+            }
+
+            // Hide other viewers
+            if (videoPlayer != null) videoPlayer.Visible = false;
+            if (documentViewer != null) documentViewer.Visible = false;
+            picCurrentImage.Visible = false;
+
+            // Show error panel
+            openFolderPanel.Visible = true;
+
+            // Update openFolderButton's tag with the current file path
+            if (openFolderButton != null)
+                openFolderButton.Tag = mediaInfo.FullPath.Value;
+        }
 
         /// <summary>
         /// Formats file size as KB or MB based on size
@@ -148,8 +277,10 @@ namespace MediaOrganiser
         {
             try
             {
-                // Hide video player, show picture box
+                // Hide other viewers, show picture box
                 if (videoPlayer != null) videoPlayer.Visible = false;
+                if (documentViewer != null) documentViewer.Visible = false;
+                if (openFolderPanel != null) openFolderPanel.Visible = false;
                 picCurrentImage.Visible = true;
 
                 // Dispose current image if exists
@@ -166,7 +297,7 @@ namespace MediaOrganiser
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error loading image: {ex.Message}");
-                UpdateStatus($"Error loading image: {mediaInfo.FileName.Value}");
+                ShowErrorWithOpenFolderButton(mediaInfo);
             }
         }
 
@@ -177,8 +308,10 @@ namespace MediaOrganiser
         {
             try
             {
-                // Hide picture box image
+                // Hide other viewers
                 picCurrentImage.Image = null;
+                if (documentViewer != null) documentViewer.Visible = false;
+                if (openFolderPanel != null) openFolderPanel.Visible = false;
 
                 // Play the video if video player exists
                 if (videoPlayer != null)
@@ -192,11 +325,12 @@ namespace MediaOrganiser
             {
                 Debug.WriteLine($"Error playing video: {ex.Message}");
                 UpdateStatus($"Error playing video: {mediaInfo.FileName.Value}");
+                ShowErrorWithOpenFolderButton(mediaInfo);
             }
         }
 
         /// <summary>
-        /// Stops any currently playing media
+        /// Stops any currently playing media or closes documents
         /// </summary>
         void StopMedia()
         {
@@ -205,10 +339,22 @@ namespace MediaOrganiser
                 try
                 {
                     videoPlayer.Stop();
+                    videoPlayer.Visible = false;
                 }
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"Error stopping media: {ex.Message}");
+                }
+
+            // Hide document viewer if visible
+            if (documentViewer != null && documentViewer.Visible)
+                try
+                {
+                    documentViewer.Visible = false;
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error hiding document viewer: {ex.Message}");
                 }
 
             // Clear any loaded image
@@ -251,6 +397,20 @@ namespace MediaOrganiser
                     catch (Exception ex)
                     {
                         Debug.WriteLine($"Error disposing video player: {ex.Message}");
+                    }
+                }
+
+                // Clean up document viewer
+                if (documentViewer != null)
+                {
+                    try
+                    {
+                        documentViewer.Dispose();
+                        documentViewer = null;
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Error disposing document viewer: {ex.Message}");
                     }
                 }
             }
@@ -471,6 +631,11 @@ namespace MediaOrganiser
         private void btnPrevious_Click(object sender, EventArgs e) => ObservableState.PreviousFile();
 
         /// <summary>
+        /// Handles the Next button click
+        /// </summary>
+        private void btnNext_Click(object sender, EventArgs e) => ObservableState.NextFile();
+
+        /// <summary>
         /// Handles the Bin button click
         /// </summary>
         private void btnBin_Click(object sender, EventArgs e) => ObservableState.UpdateFileState(FileState.Bin);
@@ -479,8 +644,6 @@ namespace MediaOrganiser
         /// Handles the Keep button click
         /// </summary>
         private void btnKeep_Click(object sender, EventArgs e) => ObservableState.UpdateFileState(FileState.Keep);
-
-        // Helper methods for thread-safe UI updates
 
         // Helper methods for thread-safe UI updates
 

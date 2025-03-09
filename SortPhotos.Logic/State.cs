@@ -41,9 +41,9 @@ namespace MusicTools.Logic
             var fileMap = (from f in files
                            select (f.Id, f)).ToMap();
 
-            var newState = stateAtom.Value with 
-            { 
-                Files = fileMap, 
+            var newState = stateAtom.Value with
+            {
+                Files = fileMap,
                 CurrentFile = files.Length > 0
                     ? files.First().Id
                     : None
@@ -68,7 +68,7 @@ namespace MusicTools.Logic
         /// </summary>
         public static void SetCurrentFolder(string? path) =>
             Update(stateAtom.Value with { CurrentFolder = Optional(path).Map(p => new FolderPath(p)) });
-           
+
         /// <summary>
         /// Sets the current file to display
         /// </summary>

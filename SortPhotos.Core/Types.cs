@@ -34,6 +34,7 @@ namespace SortPhotos.Core
         {
             Image,
             Video,
+            Document,
             Unknown
         }
 
