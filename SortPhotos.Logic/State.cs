@@ -36,7 +36,7 @@ namespace MusicTools.Logic
         public static void SetFiles(Seq<MediaInfo> files)
         {
             // Set file ID by order
-            files = toSeq(files.Select((s, i) => s with { Id = new FileId(i + 1) }));
+            files = toSeq(files.Where(s => s.Category != FileCategory.Unknown).Select((s, i) => s with { Id = new FileId(i + 1) }));
 
             var fileMap = (from f in files
                            select (f.Id, f)).ToMap();

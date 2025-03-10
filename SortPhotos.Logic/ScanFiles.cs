@@ -47,7 +47,7 @@ namespace SortPhotos.Logic
                 if (!fileInfo.Exists) IO.fail<MediaInfo>(Error.New("File no longer exists"));
 
                 var filename = Path.GetFileNameWithoutExtension(path);
-                var extension = Path.GetExtension(path);
+                var extension = Path.GetExtension(path).ToLower();
 
                 return new MediaInfo(
                     new FileId(Guid.NewGuid().GetHashCode()),
