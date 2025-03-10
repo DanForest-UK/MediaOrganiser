@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Windows.Forms;
 using static SortPhotos.Core.Types;
+using static LanguageExt.Prelude;
 
 namespace MediaOrganiser
 {
@@ -17,16 +18,14 @@ namespace MediaOrganiser
         readonly MediaService mediaService;
         System.Drawing.Image? currentImage;
 
-        // Material skin manager
-        private readonly MaterialSkinManager materialSkinManager;
+        readonly MaterialSkinManager materialSkinManager;
 
-        // Media player controls
         VideoPlayerControl? videoPlayer;
         DocumentViewerControl? documentViewer;
         Panel? openFolderPanel;
         MaterialButton? openFolderButton;
 
-        readonly string SettingsFilePath = Path.Combine(
+        readonly string settingsFilePath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "MediaOrganiser",
             "settings.json");
@@ -35,12 +34,10 @@ namespace MediaOrganiser
         {
             InitializeComponent();
 
-            // Initialize MaterialSkinManager
             materialSkinManager = MaterialSkinManager.Instance;
             materialSkinManager.AddFormToManage(this);
             materialSkinManager.Theme = MaterialSkinManager.Themes.LIGHT;
 
-            // Configure color scheme - modern blue color scheme
             materialSkinManager.ColorScheme = new ColorScheme(
                 Primary.Blue600, Primary.Blue700,
                 Primary.Blue500, Accent.LightBlue200,
@@ -48,7 +45,6 @@ namespace MediaOrganiser
 
             mediaService = new MediaService();
 
-            // Subscribe to state changes and initialize media players
             ObservableState.StateChanged += OnStateChanged;
             InitializeVideoPlayer();
             InitializeDocumentViewer();
@@ -103,41 +99,37 @@ namespace MediaOrganiser
                 return;
             }
 
-            // Update folder path display
             state.CurrentFolder.Match(
                 Some: folder => txtFolderPath.Text = folder.Value,
-                None: () => txtFolderPath.Text = string.Empty
-            );
+                None: () => txtFolderPath.Text = string.Empty);
 
-            // Update UI based on WorkInProgress state and folder availability
             btnScanFiles.Enabled = !state.WorkInProgress && state.CurrentFolder.IsSome;
             btnBrowseFolder.Enabled = !state.WorkInProgress;
             btnBin.Enabled = !state.WorkInProgress && state.Files.Count > 0;
             btnKeep.Enabled = !state.WorkInProgress && state.Files.Count > 0;
 
-            // Update Previous button state - enable if not first file
             var currentFileIndex = state.CurrentFile.Map(i => i.Value).IfNone(0);
             btnPrevious.Enabled = !state.WorkInProgress && state.Files.Count > 0 && currentFileIndex > 1;
 
-            // Update Next button state - enable if not last file
             btnNext.Enabled = !state.WorkInProgress && state.Files.Count > 0 &&
-                             currentFileIndex > 0 && currentFileIndex < state.Files.Count;
+                              currentFileIndex > 0 && currentFileIndex < state.Files.Count;
 
-            // Enable Organise Files button if we have files with Keep or Bin state and not working
-            var hasFilesToOrganise = !state.WorkInProgress &&
-                state.Files.Values.Any(f => f.State == FileState.Keep || f.State == FileState.Bin);
-            btnOrganiseFiles.Enabled = hasFilesToOrganise;
+            btnOrganiseFiles.Enabled = !state.WorkInProgress &&
+                (from f in state.Files.Values
+                 where f.State == FileState.Keep || 
+                       f.State == FileState.Bin
+                 select unit).Any();
 
-            // Update progress bar
             progressScan.Style = state.WorkInProgress ? ProgressBarStyle.Marquee : ProgressBarStyle.Blocks;
             progressScan.MarqueeAnimationSpeed = state.WorkInProgress ? 30 : 0;
             if (!state.WorkInProgress) progressScan.Value = 0;
 
-            // Update CopyOnly checkbox
             switchCopyOnly.Checked = state.CopyOnly;
 
-            // Update image display and navigation controls
             UpdateMediaDisplay(state);
+
+            if (!state.WorkInProgress)
+                StateSerializer.SaveState(state);
         }
 
         /// <summary>
@@ -145,13 +137,10 @@ namespace MediaOrganiser
         /// </summary>
         void UpdateMediaDisplay(AppModel state)
         {
-            // Stop any playing media
             StopMedia();
 
-            // If we have a current file, try to load and display it
             state.CurrentFile.Match(
-                Some: fileId =>
-                {
+                Some: fileId => {
                     if (!state.Files.ContainsKey(fileId)) return;
 
                     var mediaInfo = state.Files[fileId];
@@ -163,7 +152,6 @@ namespace MediaOrganiser
                     };
 
                     var fileSizeText = FormatFileSize(mediaInfo.Size.Value);
-                    // Include extension in filename display
                     var fullFileName = $"{mediaInfo.FileName.Value}.{mediaInfo.Extension.Value.TrimStart('.')}";
 
                     if (mediaInfo.Category == FileCategory.Image)
@@ -182,8 +170,7 @@ namespace MediaOrganiser
                         UpdateStatus($"Current file: {fullFileName} (Document, {fileSizeText}) - {fileStatus}");
                     }
                 },
-                None: () => UpdateStatus("No files selected")
-            );
+                None: () => UpdateStatus("No files selected"));
         }
 
         /// <summary>
@@ -193,44 +180,32 @@ namespace MediaOrganiser
         {
             try
             {
-                // Hide other viewers but keep picCurrentImage visible
                 if (videoPlayer != null) videoPlayer.Visible = false;
                 picCurrentImage.Image = null;
 
-                // Important: Keep picCurrentImage visible since it contains documentViewer
                 picCurrentImage.Visible = true;
 
                 if (openFolderPanel != null) openFolderPanel.Visible = false;
 
-                // Show document in viewer
                 if (documentViewer != null)
                 {
-                    // Set document viewer to visible and bring to front
                     documentViewer.Visible = true;
                     documentViewer.BringToFront();
 
-                    // Debug info
                     var extension = Path.GetExtension(mediaInfo.FullPath.Value).ToLower();
                     if (extension == ".doc" || extension == ".docx")
-                    {
                         Debug.WriteLine($"Loading Word document: {mediaInfo.FullPath.Value}");
-                    }
                     else
-                    {
                         Debug.WriteLine($"Loading document: {mediaInfo.FullPath.Value}");
-                    }
 
                     Debug.WriteLine($"Document viewer visible: {documentViewer.Visible}");
                     Debug.WriteLine($"Picture box visible: {picCurrentImage.Visible}");
                     Debug.WriteLine($"Document viewer size: {documentViewer.Width}x{documentViewer.Height}");
 
-                    // Load the document
                     documentViewer.LoadDocument(mediaInfo.FullPath.Value);
                 }
                 else
-                {
                     Debug.WriteLine("Document viewer is null");
-                }
             }
             catch (Exception ex)
             {
@@ -244,7 +219,6 @@ namespace MediaOrganiser
         /// </summary>
         void ShowErrorWithOpenFolderButton(MediaInfo mediaInfo)
         {
-            // Create panel for error message and button if it doesn't exist
             if (openFolderPanel == null)
             {
                 openFolderPanel = new Panel
@@ -272,14 +246,12 @@ namespace MediaOrganiser
                     Type = MaterialButton.MaterialButtonType.Contained
                 };
 
-                openFolderButton.Click += (s, e) =>
-                {
+                openFolderButton.Click += (s, e) => {
                     var folderPath = Path.GetDirectoryName(mediaInfo.FullPath.Value);
                     if (Directory.Exists(folderPath))
                         Process.Start("explorer.exe", folderPath);
                 };
 
-                // Add controls to panel - center them
                 var containerPanel = new Panel
                 {
                     Width = 200,
@@ -291,22 +263,18 @@ namespace MediaOrganiser
                 containerPanel.Controls.Add(errorLabel);
                 containerPanel.Location = new System.Drawing.Point(
                     (openFolderPanel.Width - containerPanel.Width) / 2,
-                    (openFolderPanel.Height - containerPanel.Height) / 2
-                );
+                    (openFolderPanel.Height - containerPanel.Height) / 2);
 
                 openFolderPanel.Controls.Add(containerPanel);
                 picCurrentImage.Controls.Add(openFolderPanel);
             }
 
-            // Hide other viewers
             if (videoPlayer != null) videoPlayer.Visible = false;
             if (documentViewer != null) documentViewer.Visible = false;
             picCurrentImage.Visible = false;
 
-            // Show error panel
             openFolderPanel.Visible = true;
 
-            // Update openFolderButton's tag with the current file path
             if (openFolderButton != null)
                 openFolderButton.Tag = mediaInfo.FullPath.Value;
         }
@@ -326,20 +294,17 @@ namespace MediaOrganiser
         {
             try
             {
-                // Hide other viewers, show picture box
                 if (videoPlayer != null) videoPlayer.Visible = false;
                 if (documentViewer != null) documentViewer.Visible = false;
                 if (openFolderPanel != null) openFolderPanel.Visible = false;
                 picCurrentImage.Visible = true;
 
-                // Dispose current image if exists
                 if (currentImage != null)
                 {
                     currentImage.Dispose();
                     currentImage = null;
                 }
 
-                // Load and display the new image
                 currentImage = System.Drawing.Image.FromFile(mediaInfo.FullPath.Value);
                 picCurrentImage.Image = currentImage;
             }
@@ -357,12 +322,10 @@ namespace MediaOrganiser
         {
             try
             {
-                // Hide other viewers
                 picCurrentImage.Image = null;
                 if (documentViewer != null) documentViewer.Visible = false;
                 if (openFolderPanel != null) openFolderPanel.Visible = false;
 
-                // Play the video if video player exists
                 if (videoPlayer != null)
                 {
                     videoPlayer.Visible = true;
@@ -383,7 +346,6 @@ namespace MediaOrganiser
         /// </summary>
         void StopMedia()
         {
-            // Stop any playing video
             if (videoPlayer != null && videoPlayer.Visible)
                 try
                 {
@@ -395,7 +357,6 @@ namespace MediaOrganiser
                     Debug.WriteLine($"Error stopping media: {ex.Message}");
                 }
 
-            // Properly clean up document viewer
             try
             {
                 if (documentViewer != null)
@@ -410,7 +371,6 @@ namespace MediaOrganiser
                 Debug.WriteLine($"Error resetting document viewer: {ex.Message}");
             }
 
-            // Clear any loaded image
             if (currentImage != null)
             {
                 currentImage.Dispose();
@@ -419,7 +379,35 @@ namespace MediaOrganiser
             }
         }
 
-        private void Form1_Load(object sender, EventArgs e) => LoadLastDirectory();
+        /// <summary>
+        /// Loads previous session or directory on form load
+        /// </summary>
+        void Form1_Load(object sender, EventArgs e)
+        {
+            var savedState = StateSerializer.LoadState();
+
+            savedState.IfSome(state =>
+            {
+                var result = MaterialMessageBox.Show(
+                    this,
+                    "Would you like to continue your previous session?",
+                    "Previous Session Found",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question);
+
+                if (result == DialogResult.Yes)
+                {
+                    UpdateStatus("Previous session loaded");
+                    ObservableState.Update(state);
+                }
+                else
+                {
+                    StateSerializer.DeleteState();
+                }
+            });
+
+            LoadLastDirectory();
+        }
 
         /// <summary>
         /// Clean up resources and unsubscribe from events
@@ -428,19 +416,15 @@ namespace MediaOrganiser
         {
             if (disposing)
             {
-                // Unsubscribe from state change events
                 ObservableState.StateChanged -= OnStateChanged;
 
-                // Dispose of any loaded image
                 if (currentImage != null)
                 {
                     currentImage.Dispose();
                     currentImage = null;
                 }
 
-                // Clean up video player
                 if (videoPlayer != null)
-                {
                     try
                     {
                         videoPlayer.Stop();
@@ -451,11 +435,8 @@ namespace MediaOrganiser
                     {
                         Debug.WriteLine($"Error disposing video player: {ex.Message}");
                     }
-                }
 
-                // Clean up document viewer
                 if (documentViewer != null)
-                {
                     try
                     {
                         documentViewer.Dispose();
@@ -465,7 +446,6 @@ namespace MediaOrganiser
                     {
                         Debug.WriteLine($"Error disposing document viewer: {ex.Message}");
                     }
-                }
             }
 
             if (disposing && (components != null))
@@ -481,14 +461,14 @@ namespace MediaOrganiser
         {
             try
             {
-                var settingsFolder = Path.GetDirectoryName(SettingsFilePath);
+                var settingsFolder = Path.GetDirectoryName(settingsFilePath);
 
                 if (!Directory.Exists(settingsFolder))
                     Directory.CreateDirectory(settingsFolder!);
 
-                if (File.Exists(SettingsFilePath))
+                if (File.Exists(settingsFilePath))
                 {
-                    var lastPath = File.ReadAllText(SettingsFilePath);
+                    var lastPath = File.ReadAllText(settingsFilePath);
                     if (lastPath.HasValue() && Directory.Exists(lastPath))
                         ObservableState.SetCurrentFolder(lastPath);
                 }
@@ -496,7 +476,6 @@ namespace MediaOrganiser
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error loading last directory: {ex.Message}");
-                // Don't show error to user, just silently fail
             }
         }
 
@@ -507,94 +486,103 @@ namespace MediaOrganiser
         {
             try
             {
-                var settingsFolder = Path.GetDirectoryName(SettingsFilePath);
+                var settingsFolder = Path.GetDirectoryName(settingsFilePath);
                 if (!Directory.Exists(settingsFolder))
                     Directory.CreateDirectory(settingsFolder!);
 
-                File.WriteAllText(SettingsFilePath, path);
+                File.WriteAllText(settingsFilePath, path);
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error saving last directory: {ex.Message}");
-                // Don't show error to user, just silently fail
             }
         }
 
-        private void btnBrowseFolder_Click(object sender, EventArgs e)
+        /// <summary>
+        /// Handles folder browsing
+        /// </summary>
+        void btnBrowseFolder_Click(object sender, EventArgs e)
         {
-            // Set initial folder if we have one
             ObservableState.Current.CurrentFolder.Match(
                 Some: folder => folderBrowserDialog.InitialDirectory = folder.Value,
-                None: () => { } // Do nothing if no folder is set
-            );
+                None: () => { });
 
             if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
             {
-                // Update the state with the new folder path
                 ObservableState.SetCurrentFolder(folderBrowserDialog.SelectedPath);
-
-                // Save the selected path for next time
                 SaveLastDirectory(folderBrowserDialog.SelectedPath);
             }
         }
 
-        private async void btnScanFiles_Click(object sender, EventArgs e) =>
+        /// <summary>
+        /// Handles file scanning
+        /// </summary>
+        async void btnScanFiles_Click(object sender, EventArgs e)
+        {
+            StateSerializer.DeleteState();
+
             await Task.Run(() =>
                 ObservableState.Current.CurrentFolder.Match(
                     Some: async path => await ScanDirectoryAsync(path.Value),
-                    None: () => MaterialMessageBox.Show("Please select a folder first.",
-                                               "No folder selected",
-                                               MessageBoxButtons.OK,
-                                               MessageBoxIcon.Warning)));
+                    None: () => MaterialMessageBox.Show(
+                        "Please select a folder first.",
+                        "No folder selected",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning)));
+        }
 
+        /// <summary>
+        /// Scans a directory for media files
+        /// </summary>
         async Task ScanDirectoryAsync(string path)
         {
             try
             {
-                // Update state to show scanning in progress
                 ObservableState.SetWorkInProgress(true);
                 UpdateStatus("Status: Scanning files...");
 
-                // Perform the scan
                 var result = await mediaService.ScanDirectoryAsync(path);
 
-                // Process the result
                 result.Match(
-                    Right: fileResponse =>
-                    {
-                        // Handle success
+                    Right: fileResponse => {
                         var fileCount = fileResponse.Files.Length;
                         UpdateStatus($"Status: Found {fileCount} media files.");
 
                         if (fileResponse.UserErrors.Length > 0)
                         {
                             var errorMessages = string.Join(Environment.NewLine,
-                                fileResponse.UserErrors.Select(ue => ue.message));
+                                from ue in fileResponse.UserErrors
+                                select ue.message);
 
-                            ShowMessageBox($"Scan completed with some warnings:{Environment.NewLine}{errorMessages}",
-                                "Scan Warnings", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            ShowMessageBox(
+                                $"Scan completed with some warnings:{Environment.NewLine}{errorMessages}",
+                                "Scan Warnings",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Warning);
                         }
                     },
-                    Left: error =>
-                    {
-                        // Handle error
+                    Left: error => {
                         UpdateStatus("Status: Error during scan.");
-                        ShowMessageBox($"An error occurred while scanning: {error.Message}",
-                            "Scan Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        ShowMessageBox(
+                            $"An error occurred while scanning: {error.Message}",
+                            "Scan Error",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Error);
                         Debug.WriteLine($"Error details: {error}");
                     });
             }
             catch (Exception ex)
             {
-                // Handle unexpected exceptions
                 UpdateStatus("Status: Error during scan.");
-                ShowMessageBox($"An unexpected error occurred: {ex.Message}",
-                    "Unexpected Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowMessageBox(
+                    $"An unexpected error occurred: {ex.Message}",
+                    "Unexpected Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
                 Debug.WriteLine($"Exception details: {ex}");
             }
             finally
             {
-                // Reset the work in progress state
                 ObservableState.SetWorkInProgress(false);
             }
         }
@@ -602,48 +590,48 @@ namespace MediaOrganiser
         /// <summary>
         /// Handles the Organise Files button click
         /// </summary>
-        private async void btnOrganiseFiles_Click(object sender, EventArgs e)
+        async void btnOrganiseFiles_Click(object sender, EventArgs e)
         {
-            // Only proceed if we have files to organise
-            var files = ObservableState.Current.Files.Values.Where(f => f.State != FileState.Unprocessed);
+            var files = from f in ObservableState.Current.Files.Values
+                        where f.State != FileState.Unprocessed
+                        select f;
+
             var fileCount = files.Count();
 
             if (fileCount == 0)
             {
-                ShowMessageBox("No files marked for keeping or deletion.",
-                    "No Files to Organise", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ShowMessageBox(
+                    "No files marked for keeping or deletion.",
+                    "No Files to Organise",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
                 return;
             }
 
-            // Get information about the operation
             var binCount = mediaService.CountFilesForDeletion();
             var keepCount = fileCount - binCount;
             var copyOnly = ObservableState.Current.CopyOnly;
 
-            // Ask for confirmation before proceeding - only show warning about deletion if not in copy-only mode
-            string confirmMessage;
-            if (copyOnly)
-            {
-                confirmMessage = $"You are about to:{Environment.NewLine}{Environment.NewLine}" +
-                    $"• Copy {keepCount} file(s) marked for keeping{Environment.NewLine}" +
-                    $"• No files will be deleted (Copy only mode){Environment.NewLine}{Environment.NewLine}" +
-                    "Do you want to continue?";
-            }
-            else
-            {
-                confirmMessage = $"You are about to:{Environment.NewLine}{Environment.NewLine}" +
-                    $"• Move {keepCount} file(s) marked for keeping{Environment.NewLine}" +
-                    $"• Delete {binCount} file(s) marked for deletion{Environment.NewLine}{Environment.NewLine}" +
-                    "Do you want to continue?";
-            }
+            var confirmMessage = copyOnly
+                ? $"You are about to:{Environment.NewLine}{Environment.NewLine}" +
+                  $"• Copy {keepCount} file(s) marked for keeping{Environment.NewLine}" +
+                  $"• No files will be deleted (Copy only mode){Environment.NewLine}{Environment.NewLine}" +
+                  "Do you want to continue?"
+                : $"You are about to:{Environment.NewLine}{Environment.NewLine}" +
+                  $"• Move {keepCount} file(s) marked for keeping{Environment.NewLine}" +
+                  $"• Delete {binCount} file(s) marked for deletion{Environment.NewLine}{Environment.NewLine}" +
+                  "Do you want to continue?";
 
-            var confirmResult = MaterialMessageBox.Show(this, confirmMessage,
-                "Confirm Organisation", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            var confirmResult = MaterialMessageBox.Show(
+                this,
+                confirmMessage,
+                "Confirm Organisation",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
 
             if (confirmResult != DialogResult.Yes)
                 return;
 
-            // Get destination folder
             var destinationDialog = new FolderBrowserDialog
             {
                 Description = "Select destination folder for organised files",
@@ -653,52 +641,53 @@ namespace MediaOrganiser
             if (destinationDialog.ShowDialog() != DialogResult.OK)
                 return;
 
-            var destinationPath = destinationDialog.SelectedPath;
-
             try
             {
-                // Update state to show work in progress
                 ObservableState.SetWorkInProgress(true);
                 UpdateStatus("Status: Organising files...");
 
-                var result = await mediaService.OrganizeFilesAsync(destinationPath);
+                var result = await mediaService.OrganizeFilesAsync(destinationDialog.SelectedPath);
 
-                // Process the result
                 result.Match(
-                    Right: fileResponse =>
-                    {
-                        // Handle success
+                    Right: fileResponse => {
                         UpdateStatus($"Media organised.");
 
                         if (fileResponse.UserErrors.Length > 0)
                         {
-                            var errorMessages = string.Join(Environment.NewLine,
-                                fileResponse.UserErrors.Select(ue => ue.message));
+                            var errorMessages = string.Join(
+                                Environment.NewLine,
+                                from ue in fileResponse.UserErrors
+                                select ue.message);
 
-                            ShowMessageBox($"Organisation completed with some warnings:{Environment.NewLine}{errorMessages}",
-                                "Organise Warnings", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            ShowMessageBox(
+                                $"Organisation completed with some warnings:{Environment.NewLine}{errorMessages}",
+                                "Organise Warnings",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Warning);
                         }
                     },
-                    Left: error =>
-                    {
-                        // Handle error
+                    Left: error => {
                         UpdateStatus("Status: Error during organise.");
-                        ShowMessageBox($"An error occurred while organising: {error.Message}",
-                            "Organise Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        ShowMessageBox(
+                            $"An error occurred while organising: {error.Message}",
+                            "Organise Error",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Error);
                         Debug.WriteLine($"Error details: {error}");
                     });
             }
             catch (Exception ex)
             {
-                // Handle unexpected exceptions
                 UpdateStatus("Status: Unexpected error during file organisation.");
-                ShowMessageBox($"An unexpected error occurred: {ex.Message}",
-                    "Unexpected Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowMessageBox(
+                    $"An unexpected error occurred: {ex.Message}",
+                    "Unexpected Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
                 Debug.WriteLine($"Exception details: {ex}");
             }
             finally
             {
-                // Reset the work in progress state
                 ObservableState.SetWorkInProgress(false);
             }
         }
@@ -706,54 +695,50 @@ namespace MediaOrganiser
         /// <summary>
         /// Handles the CopyOnly checkbox change
         /// </summary>
-        private void switchCopyOnly_CheckedChanged(object sender, EventArgs e)
-        {
+        void switchCopyOnly_CheckedChanged(object sender, EventArgs e) =>
             ObservableState.SetCopyOnly(switchCopyOnly.Checked);
-        }
 
         /// <summary>
         /// Handles the Previous button click
         /// </summary>
-        private void btnPrevious_Click(object sender, EventArgs e) => ObservableState.PreviousFile();
+        void btnPrevious_Click(object sender, EventArgs e) =>
+            ObservableState.PreviousFile();
 
         /// <summary>
         /// Handles the Next button click
         /// </summary>
-        private void btnNext_Click(object sender, EventArgs e) => ObservableState.NextFile();
+        void btnNext_Click(object sender, EventArgs e) =>
+            ObservableState.NextFile();
 
         /// <summary>
         /// Handles the Bin button click
         /// </summary>
-        private void btnBin_Click(object sender, EventArgs e) => ObservableState.UpdateFileState(FileState.Bin);
+        void btnBin_Click(object sender, EventArgs e) =>
+            ObservableState.UpdateFileState(FileState.Bin);
 
         /// <summary>
         /// Handles the Keep button click
         /// </summary>
-        private void btnKeep_Click(object sender, EventArgs e) => ObservableState.UpdateFileState(FileState.Keep);
-
-        // Helper methods for thread-safe UI updates
+        void btnKeep_Click(object sender, EventArgs e) =>
+            ObservableState.UpdateFileState(FileState.Keep);
 
         /// <summary>
         /// Updates the status label with text, ensuring UI thread safety
         /// </summary>
         void UpdateStatus(string text)
         {
-            // Check if we need to marshal to the UI thread
             if (lblStatus.InvokeRequired)
             {
                 lblStatus.Invoke(() => UpdateStatus(text));
                 return;
             }
 
-            // If the text is too long for the status bar, trim it
-            if (text.Length > 100)
-            {
-                text = text.Substring(0, 97) + "...";
-            }
-
-            lblStatus.Text = text;
+            lblStatus.Text = text.Length > 100 ? text.Substring(0, 97) + "..." : text;
         }
 
+        /// <summary>
+        /// Shows a message box with UI thread safety
+        /// </summary>
         void ShowMessageBox(string message, string caption, MessageBoxButtons buttons, MessageBoxIcon icon)
         {
             if (InvokeRequired)
