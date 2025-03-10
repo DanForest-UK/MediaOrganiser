@@ -9,6 +9,7 @@ using IronPdf;
 using System.Collections.Generic;
 using Image = System.Drawing.Image;
 using static SortPhotos.Core.Types;
+using MaterialSkin.Controls;
 
 namespace MediaOrganiser
 {
@@ -19,15 +20,15 @@ namespace MediaOrganiser
     public class DocumentViewerControl : UserControl
     {
         // UI components
-        private TextBox txtDocumentContent;
+        private MaterialMultiLineTextBox2 txtDocumentContent;
         private Panel loadingPanel;
-        private Label loadingLabel;
+        private MaterialLabel loadingLabel;
         private Panel pdfPanel;
         private PictureBox pdfPictureBox;
         private Panel pdfNavigationPanel;
-        private Button btnPrevPage;
-        private Button btnNextPage;
-        private Label lblPageInfo;
+        private MaterialButton btnPrevPage;
+        private MaterialButton btnNextPage;
+        private MaterialLabel lblPageInfo;
 
         // PDF rendering components
         private PdfDocument currentPdfDocument;
@@ -62,23 +63,12 @@ namespace MediaOrganiser
         /// <summary>
         /// Initializes all UI components for document viewing
         /// </summary>
-        /// <summary>
-        /// Initializes all UI components for document viewing
-        /// </summary>
-        /// <summary>
-        /// Initializes all UI components for document viewing
-        /// </summary>
-        /// <summary>
-        /// Initializes all UI components for document viewing
-        /// </summary>
         void InitializeComponents()
         {
             // Create text viewer for plain text documents
-            txtDocumentContent = new TextBox
+            txtDocumentContent = new MaterialMultiLineTextBox2
             {
-                Multiline = true,
                 ReadOnly = true,
-                ScrollBars = ScrollBars.Vertical,
                 Dock = DockStyle.Fill,
                 BackColor = System.Drawing.Color.White,
                 Visible = false
@@ -92,13 +82,13 @@ namespace MediaOrganiser
                 BackColor = System.Drawing.Color.White
             };
 
-            loadingLabel = new Label
+            loadingLabel = new MaterialLabel
             {
                 Text = "Loading document...",
                 AutoSize = false,
                 TextAlign = ContentAlignment.MiddleCenter,
                 Dock = DockStyle.Fill,
-                Font = new Font(Font.FontFamily, 12)
+                Font = new Font("Roboto", 16F, FontStyle.Regular, GraphicsUnit.Pixel)
             };
 
             loadingPanel.Controls.Add(loadingLabel);
@@ -108,7 +98,7 @@ namespace MediaOrganiser
             {
                 Dock = DockStyle.Bottom,
                 Height = 70,
-                BackColor = System.Drawing.Color.LightGray,
+                BackColor = System.Drawing.Color.WhiteSmoke,
                 Visible = false
             };
 
@@ -123,27 +113,27 @@ namespace MediaOrganiser
             };
 
             // Create buttons with appropriate sizing
-            btnPrevPage = new Button
+            btnPrevPage = new MaterialButton
             {
                 Text = "Previous",
                 Width = 120,
                 Height = 45,
                 Enabled = false,
                 Margin = new Padding(0, 0, 10, 0), // Add some right margin for spacing between buttons
-                FlatStyle = FlatStyle.Standard // Standard button style
+                Type = MaterialButton.MaterialButtonType.Outlined
             };
 
-            btnNextPage = new Button
+            btnNextPage = new MaterialButton
             {
                 Text = "Next",
                 Width = 80,
                 Height = 45,
                 Enabled = false,
                 Margin = new Padding(0, 0, 20, 0), // Add more right margin after Next button
-                FlatStyle = FlatStyle.Standard
+                Type = MaterialButton.MaterialButtonType.Outlined
             };
 
-            lblPageInfo = new Label
+            lblPageInfo = new MaterialLabel
             {
                 Text = "Page: 0 / 0",
                 AutoSize = true,
@@ -532,34 +522,36 @@ namespace MediaOrganiser
                 Panel wordPanel = new Panel
                 {
                     Dock = DockStyle.Fill,
-                    BackColor = System.Drawing.Color.White
+                    BackColor = System.Drawing.Color.WhiteSmoke
                 };
 
-                Label infoLabel = new Label
+                MaterialLabel infoLabel = new MaterialLabel
                 {
                     Text = $"Word Document: {Path.GetFileName(filePath)}",
                     AutoSize = false,
                     TextAlign = ContentAlignment.MiddleCenter,
                     Dock = DockStyle.Top,
                     Height = 40,
-                    Font = new Font(Font.FontFamily, 12, FontStyle.Bold)
+                    Font = new Font("Roboto", 14F, FontStyle.Bold, GraphicsUnit.Pixel)
                 };
 
-                Label errorLabel = new Label
+                MaterialLabel errorLabel = new MaterialLabel
                 {
                     Text = "Unable to render document in viewer. You can open it externally:",
                     AutoSize = false,
                     TextAlign = ContentAlignment.MiddleCenter,
                     Dock = DockStyle.Top,
                     Height = 40,
-                    Font = new Font(Font.FontFamily, 10)
+                    Font = new Font("Roboto", 14F, FontStyle.Regular, GraphicsUnit.Pixel)
                 };
 
-                Button openButton = new Button
+                MaterialButton openButton = new MaterialButton
                 {
                     Text = "Open in Microsoft Word",
                     Width = 200,
                     Height = 40,
+                    Type = MaterialButton.MaterialButtonType.Contained,
+                    UseAccentColor = true,
                     Anchor = AnchorStyles.None
                 };
 

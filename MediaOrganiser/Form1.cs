@@ -1,5 +1,7 @@
 using LanguageExt;
 using LanguageExt.Common;
+using MaterialSkin;
+using MaterialSkin.Controls;
 using MediaOrganiser.Services;
 using MusicTools.Logic;
 using SortPhotos.Core;
@@ -10,16 +12,19 @@ using static SortPhotos.Core.Types;
 
 namespace MediaOrganiser
 {
-    public partial class Form1 : Form
+    public partial class Form1 : MaterialForm
     {
         readonly MediaService mediaService;
         System.Drawing.Image? currentImage;
+
+        // Material skin manager
+        private readonly MaterialSkinManager materialSkinManager;
 
         // Media player controls
         VideoPlayerControl? videoPlayer;
         DocumentViewerControl? documentViewer;
         Panel? openFolderPanel;
-        Button? openFolderButton;
+        MaterialButton? openFolderButton;
 
         readonly string SettingsFilePath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -29,6 +34,18 @@ namespace MediaOrganiser
         public Form1()
         {
             InitializeComponent();
+
+            // Initialize MaterialSkinManager
+            materialSkinManager = MaterialSkinManager.Instance;
+            materialSkinManager.AddFormToManage(this);
+            materialSkinManager.Theme = MaterialSkinManager.Themes.LIGHT;
+
+            // Configure color scheme - modern blue color scheme
+            materialSkinManager.ColorScheme = new ColorScheme(
+                Primary.Blue600, Primary.Blue700,
+                Primary.Blue500, Accent.LightBlue200,
+                TextShade.WHITE);
+
             mediaService = new MediaService();
 
             // Subscribe to state changes and initialize media players
@@ -117,7 +134,7 @@ namespace MediaOrganiser
             if (!state.WorkInProgress) progressScan.Value = 0;
 
             // Update CopyOnly checkbox
-            chkCopyOnly.Checked = state.CopyOnly;
+            switchCopyOnly.Checked = state.CopyOnly;
 
             // Update image display and navigation controls
             UpdateMediaDisplay(state);
@@ -169,9 +186,6 @@ namespace MediaOrganiser
             );
         }
 
-        /// <summary>
-        /// Displays a document file
-        /// </summary>
         /// <summary>
         /// Displays a document file
         /// </summary>
@@ -239,7 +253,7 @@ namespace MediaOrganiser
                     BackColor = System.Drawing.Color.WhiteSmoke
                 };
 
-                var errorLabel = new Label
+                var errorLabel = new MaterialLabel
                 {
                     Text = "Unable to preview file",
                     AutoSize = false,
@@ -249,12 +263,13 @@ namespace MediaOrganiser
                     Font = new Font(Font.FontFamily, 12, FontStyle.Bold)
                 };
 
-                openFolderButton = new Button
+                openFolderButton = new MaterialButton
                 {
                     Text = "Open enclosing folder",
                     Dock = DockStyle.Top,
                     Height = 40,
-                    Width = 200
+                    Width = 200,
+                    Type = MaterialButton.MaterialButtonType.Contained
                 };
 
                 openFolderButton.Click += (s, e) =>
@@ -527,7 +542,7 @@ namespace MediaOrganiser
             await Task.Run(() =>
                 ObservableState.Current.CurrentFolder.Match(
                     Some: async path => await ScanDirectoryAsync(path.Value),
-                    None: () => MessageBox.Show("Please select a folder first.",
+                    None: () => MaterialMessageBox.Show("Please select a folder first.",
                                                "No folder selected",
                                                MessageBoxButtons.OK,
                                                MessageBoxIcon.Warning)));
@@ -622,7 +637,7 @@ namespace MediaOrganiser
                     "Do you want to continue?";
             }
 
-            var confirmResult = MessageBox.Show(this, confirmMessage,
+            var confirmResult = MaterialMessageBox.Show(this, confirmMessage,
                 "Confirm Organisation", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
             if (confirmResult != DialogResult.Yes)
@@ -691,9 +706,9 @@ namespace MediaOrganiser
         /// <summary>
         /// Handles the CopyOnly checkbox change
         /// </summary>
-        private void chkCopyOnly_CheckedChanged(object sender, EventArgs e)
+        private void switchCopyOnly_CheckedChanged(object sender, EventArgs e)
         {
-            ObservableState.SetCopyOnly(chkCopyOnly.Checked);
+            ObservableState.SetCopyOnly(switchCopyOnly.Checked);
         }
 
         /// <summary>
@@ -742,9 +757,9 @@ namespace MediaOrganiser
         void ShowMessageBox(string message, string caption, MessageBoxButtons buttons, MessageBoxIcon icon)
         {
             if (InvokeRequired)
-                Invoke(() => MessageBox.Show(this, message, caption, buttons, icon));
+                Invoke(() => MaterialMessageBox.Show(this, message, caption, buttons, icon));
             else
-                MessageBox.Show(this, message, caption, buttons, icon);
+                MaterialMessageBox.Show(this, message, caption, buttons, icon);
         }
     }
 }
