@@ -82,6 +82,15 @@ namespace SortPhotos.Core
         public static Error ReadFileError(string filename, Error inner) =>
             DisplayError($"Error reading file: {filename}", inner);
 
+        public static Error UnableToMove(string fileName, string message, Error inner) =>
+            DisplayError($"Unable to move/copy file {fileName}: {message}", inner);
+
+        public static Error UnableToDelete(string fileName, string message, Error inner) =>
+            DisplayError($"Unable to delete file {fileName}: {message}", inner);
+
+        public static Error UnableToCreateDirectory(string directory, string message, Error inner) =>
+           DisplayError($"Unable to create directory {directory}: {message}", inner);
+
         public static (Seq<UserError> User, Seq<Error> Unexpected) SeparateUserErrors(this Seq<Error> allErrors)
         {
             var separated = allErrors.Separate(err => err.Code == DisplayErrorCode);
