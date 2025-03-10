@@ -355,9 +355,8 @@ namespace MediaOrganiser
                         // Convert Word to PDF using IronPDF's built-in converter
                         var renderer = new DocxToPdfRenderer();
                         // Render from DOCX file
-                        var pdf = renderer.RenderDocxAsPdf(filePath);
-                        var pdfDocument = PdfDocument.FromFile(filePath);
-                                        
+                        var pdfDocument = renderer.RenderDocxAsPdf(filePath);
+                                                          
                         totalPdfPages = pdfDocument.PageCount;
 
                         var images = pdfDocument.ToBitmap(150);
