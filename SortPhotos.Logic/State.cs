@@ -76,6 +76,12 @@ namespace MusicTools.Logic
             Update(stateAtom.Value with { CopyOnly = copyOnly });
 
         /// <summary>
+        /// Sets the sort by year flag
+        /// </summary>
+        public static void SetSortByYear(bool sortByYear) =>
+            Update(stateAtom.Value with { SortByYear = sortByYear });
+
+        /// <summary>
         /// Sets the current file to display
         /// </summary>
         public static void SetCurrentFile(FileId fileId) =>

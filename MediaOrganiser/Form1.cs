@@ -135,6 +135,7 @@ namespace MediaOrganiser
 
             // Update CopyOnly checkbox
             chkCopyOnly.Checked = state.CopyOnly;
+            chkSortByYear.Checked = state.SortByYear;
 
             UpdateMediaDisplay(state);
 
@@ -157,9 +158,9 @@ namespace MediaOrganiser
                     var mediaInfo = state.Files[fileId];
                     var fileStatus = mediaInfo.State switch
                     {
-                        FileState.Keep => "Keep",
+                        FileState.Keep => "Keep", // todo can get straight from enum
                         FileState.Bin => "Bin",
-                        _ => "Unprocessed"
+                        _ => "Undecided"
                     };
 
                     var fileSizeText = FormatFileSize(mediaInfo.Size.Value);
@@ -542,6 +543,12 @@ namespace MediaOrganiser
         }
 
         /// <summary>
+        /// Handles the SortByYear checkbox change
+        /// </summary>
+        void ChkSortByYear_Changed(object sender, EventArgs e) =>
+            ObservableState.SetSortByYear(chkSortByYear.Checked);
+
+        /// <summary>
         /// Handles file scanning
         /// </summary>
         async void btnScanFiles_Click(object sender, EventArgs e)
@@ -620,7 +627,7 @@ namespace MediaOrganiser
         async void btnOrganiseFiles_Click(object sender, EventArgs e)
         {
             var files = from f in ObservableState.Current.Files.Values
-                        where f.State != FileState.Unprocessed
+                        where f.State != FileState.Undecided
                         select f;
 
             var fileCount = files.Count();
@@ -647,7 +654,7 @@ namespace MediaOrganiser
                 : $"You are about to:{Environment.NewLine}{Environment.NewLine}" +
                   $"• Move {keepCount} file(s) marked for keeping{Environment.NewLine}" +
                   $"• Delete {binCount} file(s) marked for deletion{Environment.NewLine}{Environment.NewLine}" +
-                  "Do you want to continue?";
+                  "Do you want to continue?";  // todo this could be neater
 
             var confirmResult = MessageBox.Show(this, confirmMessage,
                 "Confirm Organisation", MessageBoxButtons.YesNo, MessageBoxIcon.Question);

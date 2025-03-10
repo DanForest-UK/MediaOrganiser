@@ -42,16 +42,17 @@ namespace MediaOrganiser.Services
         /// <summary>
         /// Organizes the files based on their state
         /// </summary>
-        public async Task<Either<Error, OrganiseResponse>> OrganizeFilesAsync(string destinationPath) 
-           {
+        public async Task<Either<Error, OrganiseResponse>> OrganizeFilesAsync(string destinationPath)
+        {
             try
             {
-                var result = await Task.Run(() => 
+                var result = await Task.Run(() =>
                     OrganiseFiles.DoOrganiseFiles(
-                        ObservableState.Current.Files.Values.ToSeq(), 
-                        destinationPath, 
-                        ObservableState.Current.CopyOnly).Run());
-                
+                        ObservableState.Current.Files.Values.ToSeq(),
+                        destinationPath,
+                        ObservableState.Current.CopyOnly,
+                        ObservableState.Current.SortByYear).Run());
+
                 if (!result.Any())
                     ObservableState.ClearFiles();
                 return new OrganiseResponse(result, result.IsEmpty);

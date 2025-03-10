@@ -18,7 +18,7 @@ namespace MediaOrganiser
         /// <summary>
         /// A serializable version of the application state
         /// </summary>
-        public record SerializableAppModel(MediaInfo[] Files, int CurrentFileId, string CurrentFolder, bool CopyOnly);
+        public record SerializableAppModel(MediaInfo[] Files, int CurrentFileId, string CurrentFolder, bool CopyOnly, bool SortByYear);
 
         const string StateFileName = "appstate.json";
 
@@ -87,7 +87,8 @@ namespace MediaOrganiser
                 Files: model.Files.Values.ToArray(),
                 CurrentFileId: model.CurrentFile.Map(v => v.Value).IfNone(0),
                 CurrentFolder: model.CurrentFolder.Map(v => v.Value).IfNone(""),
-                CopyOnly: model.CopyOnly);
+                CopyOnly: model.CopyOnly,
+                SortByYear: model.SortByYear);
 
         public static AppModel ToAppModel(this SerializableAppModel model) =>
             new AppModel(
@@ -98,7 +99,8 @@ namespace MediaOrganiser
                     : None,
                 CurrentFile: model.CurrentFileId == 0
                     ? None
-                    : new FileId(model.CurrentFileId));
+                    : new FileId(model.CurrentFileId),
+                SortByYear: model.SortByYear);
       
 
         /// <summary>

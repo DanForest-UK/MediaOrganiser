@@ -63,7 +63,7 @@ namespace SortPhotos.Logic
                             : Enumerable.Contains(DocumentExtensions, extension)
                                 ? FileCategory.Document
                                 : FileCategory.Unknown,
-                    FileState.Unprocessed);
+                    FileState.Undecided);
             })
             | @catch(e => IO.fail<MediaInfo>(AppErrors.ReadFileError(path, e)));
     }

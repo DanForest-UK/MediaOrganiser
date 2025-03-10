@@ -15,7 +15,8 @@ namespace SortPhotos.Core
             bool WorkInProgress = false,
             Option<FolderPath> CurrentFolder = default,
             Option<FileId> CurrentFile = default,
-            bool CopyOnly = false);
+            bool CopyOnly = false,
+            bool SortByYear = false);
 
         public record FileId(int Value) : IComparable<FileId>
         {
@@ -43,7 +44,7 @@ namespace SortPhotos.Core
         {
             Keep,
             Bin,
-            Unprocessed
+            Undecided
         }
 
         public record MediaInfo(
