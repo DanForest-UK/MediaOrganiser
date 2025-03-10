@@ -31,6 +31,7 @@
             pnlCenterButtons = new Panel();
             btnOrganiseFiles = new Button();
             chkCopyOnly = new CheckBox();
+            chkSortByYear = new CheckBox();
             ((System.ComponentModel.ISupportInitialize)picCurrentImage).BeginInit();
             pnlButtons.SuspendLayout();
             pnlCenterButtons.SuspendLayout();
@@ -49,6 +50,7 @@
             // txtFolderPath
             // 
             txtFolderPath.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            txtFolderPath.BorderStyle = BorderStyle.FixedSingle;
             txtFolderPath.Location = new System.Drawing.Point(194, 33);
             txtFolderPath.Name = "txtFolderPath";
             txtFolderPath.ReadOnly = true;
@@ -77,7 +79,6 @@
             // 
             // lblStatus
             // 
-            // lblStatus
             lblStatus.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             lblStatus.Location = new System.Drawing.Point(50, 943);
             lblStatus.Name = "lblStatus";
@@ -88,7 +89,8 @@
             // picCurrentImage
             // 
             picCurrentImage.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            picCurrentImage.BackColor = System.Drawing.Color.LightGray;
+            picCurrentImage.BackColor = System.Drawing.Color.FromArgb(250, 250, 250);
+            picCurrentImage.BorderStyle = BorderStyle.FixedSingle;
             picCurrentImage.Location = new System.Drawing.Point(50, 150);
             picCurrentImage.Name = "picCurrentImage";
             picCurrentImage.Size = new System.Drawing.Size(2151, 773);
@@ -110,7 +112,7 @@
             // btnNext
             // 
             btnNext.Enabled = false;
-            btnNext.Location = new System.Drawing.Point(153, 3);
+            btnNext.Location = new System.Drawing.Point(170, 3);
             btnNext.Name = "btnNext";
             btnNext.Size = new System.Drawing.Size(150, 46);
             btnNext.TabIndex = 1;
@@ -123,7 +125,7 @@
             btnBin.Enabled = false;
             btnBin.Location = new System.Drawing.Point(0, 0);
             btnBin.Name = "btnBin";
-            btnBin.Size = new  System.Drawing.Size(150, 46);
+            btnBin.Size = new System.Drawing.Size(150, 46);
             btnBin.TabIndex = 1;
             btnBin.Text = "Bin";
             btnBin.UseVisualStyleBackColor = true;
@@ -143,11 +145,13 @@
             // pnlButtons
             // 
             pnlButtons.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            pnlButtons.BackColor = System.Drawing.Color.FromArgb(240, 242, 245);
             pnlButtons.Controls.Add(pnlCenterButtons);
             pnlButtons.Controls.Add(btnPrevious);
             pnlButtons.Controls.Add(btnNext);
             pnlButtons.Location = new System.Drawing.Point(50, 90);
             pnlButtons.Name = "pnlButtons";
+            pnlButtons.Padding = new Padding(5);
             pnlButtons.Size = new System.Drawing.Size(2151, 60);
             pnlButtons.TabIndex = 7;
             // 
@@ -185,11 +189,23 @@
             chkCopyOnly.UseVisualStyleBackColor = true;
             chkCopyOnly.CheckedChanged += chkCopyOnly_Changed;
             // 
+            // chkSortByYear
+            // 
+            chkSortByYear.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            chkSortByYear.AutoSize = true;
+            chkSortByYear.Location = new System.Drawing.Point(1687, 952);
+            chkSortByYear.Name = "chkSortByYear";
+            chkSortByYear.Size = new System.Drawing.Size(174, 36);
+            chkSortByYear.TabIndex = 10;
+            chkSortByYear.Text = "Sort by year";
+            chkSortByYear.UseVisualStyleBackColor = true;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(13F, 32F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new System.Drawing.Size(2235, 1061);
+            Controls.Add(chkSortByYear);
             Controls.Add(chkCopyOnly);
             Controls.Add(btnOrganiseFiles);
             Controls.Add(pnlButtons);
@@ -226,5 +242,6 @@
         private Button btnNext;
         private Button btnOrganiseFiles;
         private CheckBox chkCopyOnly;
+        private CheckBox chkSortByYear;
     }
 }

@@ -48,6 +48,9 @@ namespace MediaOrganiser
             // Add the ElementHost to our control
             this.Controls.Add(elementHost);
 
+            // Apply theme to the control
+            this.BackColor = ThemeManager.PrimaryBackColor;
+
             // Subscribe to the MediaOpened and MediaEnded events
             mediaElement.MediaOpened += (s, e) => {
                 // Auto-play when media is loaded

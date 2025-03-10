@@ -30,6 +30,28 @@ namespace MediaOrganiser
         public Form1()
         {
             InitializeComponent();
+
+            // Apply theme to the entire form
+            ThemeManager.ApplyTheme(this);
+
+            // Apply special styles to action buttons
+            ThemeManager.StyleSuccessButton(btnKeep);
+            ThemeManager.StyleDangerButton(btnBin);
+            ThemeManager.StylePrimaryButton(btnScanFiles);
+            ThemeManager.StylePrimaryButton(btnOrganiseFiles);
+            ThemeManager.StylePrimaryButton(btnBrowseFolder);
+
+            // Apply navigation button styles
+            ThemeManager.StyleSecondaryButton(btnNext);
+            ThemeManager.StyleSecondaryButton(btnPrevious);
+
+            // Set form background color and appearance
+            this.BackColor = ThemeManager.FormBackgroundColor;
+
+            // Style the main picture display area
+            picCurrentImage.BorderStyle = BorderStyle.FixedSingle;
+            picCurrentImage.BackColor = ThemeManager.PrimaryBackColor;
+
             mediaService = new MediaService();
 
             ObservableState.StateChanged += OnStateChanged;
@@ -165,9 +187,6 @@ namespace MediaOrganiser
         /// <summary>
         /// Displays a document file
         /// </summary>
-        /// <summary>
-        /// Displays a document file
-        /// </summary>
         void DisplayDocument(MediaInfo mediaInfo)
         {
             try
@@ -215,9 +234,9 @@ namespace MediaOrganiser
             {
                 openFolderPanel = new Panel
                 {
-                    Dock = DockStyle.Fill,
-                    BackColor = System.Drawing.Color.WhiteSmoke
+                    Dock = DockStyle.Fill
                 };
+                ThemeManager.StylePanel(openFolderPanel, ThemeManager.SecondaryBackColor);
 
                 var errorLabel = new Label
                 {
@@ -225,9 +244,9 @@ namespace MediaOrganiser
                     AutoSize = false,
                     TextAlign = ContentAlignment.MiddleCenter,
                     Dock = DockStyle.Top,
-                    Height = 40,
-                    Font = new Font(Font.FontFamily, 12, FontStyle.Bold)
+                    Height = 40
                 };
+                ThemeManager.StyleLabel(errorLabel, ThemeManager.HeaderFont);
 
                 openFolderButton = new Button
                 {
@@ -236,6 +255,7 @@ namespace MediaOrganiser
                     Height = 40,
                     Width = 200
                 };
+                ThemeManager.StyleButton(openFolderButton);
 
                 openFolderButton.Click += (s, e) =>
                 {
@@ -250,6 +270,7 @@ namespace MediaOrganiser
                     Height = 100,
                     Anchor = AnchorStyles.None
                 };
+                ThemeManager.StylePanel(containerPanel, ThemeManager.SecondaryBackColor);
 
                 containerPanel.Controls.Add(openFolderButton);
                 containerPanel.Controls.Add(errorLabel);

@@ -62,15 +62,6 @@ namespace MediaOrganiser
         /// <summary>
         /// Initializes all UI components for document viewing
         /// </summary>
-        /// <summary>
-        /// Initializes all UI components for document viewing
-        /// </summary>
-        /// <summary>
-        /// Initializes all UI components for document viewing
-        /// </summary>
-        /// <summary>
-        /// Initializes all UI components for document viewing
-        /// </summary>
         void InitializeComponents()
         {
             // Create text viewer for plain text documents
@@ -80,26 +71,26 @@ namespace MediaOrganiser
                 ReadOnly = true,
                 ScrollBars = ScrollBars.Vertical,
                 Dock = DockStyle.Fill,
-                BackColor = System.Drawing.Color.White,
                 Visible = false
             };
+            ThemeManager.StyleTextBox(txtDocumentContent);
 
             // Create loading indicator
             loadingPanel = new Panel
             {
                 Dock = DockStyle.Fill,
-                Visible = false,
-                BackColor = System.Drawing.Color.White
+                Visible = false
             };
+            ThemeManager.StylePanel(loadingPanel, ThemeManager.PrimaryBackColor);
 
             loadingLabel = new Label
             {
                 Text = "Loading document...",
                 AutoSize = false,
                 TextAlign = ContentAlignment.MiddleCenter,
-                Dock = DockStyle.Fill,
-                Font = new Font(Font.FontFamily, 12)
+                Dock = DockStyle.Fill
             };
+            ThemeManager.StyleLabel(loadingLabel, ThemeManager.HeaderFont);
 
             loadingPanel.Controls.Add(loadingLabel);
 
@@ -108,9 +99,9 @@ namespace MediaOrganiser
             {
                 Dock = DockStyle.Bottom,
                 Height = 70,
-                BackColor = System.Drawing.Color.LightGray,
                 Visible = false
             };
+            ThemeManager.StylePanel(pdfNavigationPanel, ThemeManager.AccentBackColor);
 
             // Use a simple flow layout but align to the left
             var flowLayout = new FlowLayoutPanel
@@ -121,6 +112,7 @@ namespace MediaOrganiser
                 Padding = new Padding(20, 15, 20, 10), // Good padding
                 AutoSize = true
             };
+            ThemeManager.StylePanel(flowLayout, ThemeManager.AccentBackColor);
 
             // Create buttons with appropriate sizing
             btnPrevPage = new Button
@@ -129,9 +121,9 @@ namespace MediaOrganiser
                 Width = 120,
                 Height = 45,
                 Enabled = false,
-                Margin = new Padding(0, 0, 10, 0), // Add some right margin for spacing between buttons
-                FlatStyle = FlatStyle.Standard // Standard button style
+                Margin = new Padding(0, 0, 10, 0) // Add some right margin for spacing between buttons
             };
+            ThemeManager.StyleButton(btnPrevPage);
 
             btnNextPage = new Button
             {
@@ -139,9 +131,9 @@ namespace MediaOrganiser
                 Width = 80,
                 Height = 45,
                 Enabled = false,
-                Margin = new Padding(0, 0, 20, 0), // Add more right margin after Next button
-                FlatStyle = FlatStyle.Standard
+                Margin = new Padding(0, 0, 20, 0) // Add more right margin after Next button
             };
+            ThemeManager.StyleButton(btnNextPage);
 
             lblPageInfo = new Label
             {
@@ -151,6 +143,7 @@ namespace MediaOrganiser
                 Padding = new Padding(0, 8, 0, 0), // Top padding to vertically center with buttons
                 MinimumSize = new System.Drawing.Size(150, 35)
             };
+            ThemeManager.StyleLabel(lblPageInfo);
 
             btnPrevPage.Click += (s, e) => ShowPdfPage(currentPdfPage - 1);
             btnNextPage.Click += (s, e) => ShowPdfPage(currentPdfPage + 1);
@@ -166,17 +159,17 @@ namespace MediaOrganiser
             pdfPanel = new Panel
             {
                 Dock = DockStyle.Fill,
-                Visible = false,
-                BackColor = System.Drawing.Color.White
+                Visible = false
             };
+            ThemeManager.StylePanel(pdfPanel, ThemeManager.PrimaryBackColor);
 
             pdfPictureBox = new PictureBox
             {
                 Dock = DockStyle.Fill,
                 SizeMode = PictureBoxSizeMode.Zoom,
-                BackColor = System.Drawing.Color.White,
                 Visible = true
             };
+            pdfPictureBox.BackColor = ThemeManager.PrimaryBackColor;
 
             pdfPanel.Controls.Add(pdfPictureBox);
 
@@ -531,9 +524,9 @@ namespace MediaOrganiser
                 // Create a simple panel with a button to open Word doc
                 Panel wordPanel = new Panel
                 {
-                    Dock = DockStyle.Fill,
-                    BackColor = System.Drawing.Color.White
+                    Dock = DockStyle.Fill
                 };
+                ThemeManager.StylePanel(wordPanel, ThemeManager.PrimaryBackColor);
 
                 Label infoLabel = new Label
                 {
@@ -541,9 +534,9 @@ namespace MediaOrganiser
                     AutoSize = false,
                     TextAlign = ContentAlignment.MiddleCenter,
                     Dock = DockStyle.Top,
-                    Height = 40,
-                    Font = new Font(Font.FontFamily, 12, FontStyle.Bold)
+                    Height = 40
                 };
+                ThemeManager.StyleLabel(infoLabel, ThemeManager.HeaderFont);
 
                 Label errorLabel = new Label
                 {
@@ -551,9 +544,9 @@ namespace MediaOrganiser
                     AutoSize = false,
                     TextAlign = ContentAlignment.MiddleCenter,
                     Dock = DockStyle.Top,
-                    Height = 40,
-                    Font = new Font(Font.FontFamily, 10)
+                    Height = 40
                 };
+                ThemeManager.StyleLabel(errorLabel);
 
                 Button openButton = new Button
                 {
@@ -562,6 +555,7 @@ namespace MediaOrganiser
                     Height = 40,
                     Anchor = AnchorStyles.None
                 };
+                ThemeManager.StyleButton(openButton);
 
                 openButton.Click += (s, e) => OpenDocumentExternally(filePath);
 
@@ -794,5 +788,5 @@ namespace MediaOrganiser
 
             base.Dispose(disposing);
         }
-    }
+    }  
 }
