@@ -718,12 +718,25 @@ namespace MediaOrganiser
 
         // Helper methods for thread-safe UI updates
 
+        /// <summary>
+        /// Updates the status label with text, ensuring UI thread safety
+        /// </summary>
         void UpdateStatus(string text)
         {
+            // Check if we need to marshal to the UI thread
             if (lblStatus.InvokeRequired)
-                lblStatus.Invoke(() => lblStatus.Text = text);
-            else
-                lblStatus.Text = text;
+            {
+                lblStatus.Invoke(() => UpdateStatus(text));
+                return;
+            }
+
+            // If the text is too long for the status bar, trim it
+            if (text.Length > 100)
+            {
+                text = text.Substring(0, 97) + "...";
+            }
+
+            lblStatus.Text = text;
         }
 
         void ShowMessageBox(string message, string caption, MessageBoxButtons buttons, MessageBoxIcon icon)

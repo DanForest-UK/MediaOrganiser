@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using IronPdf;
 using System.Collections.Generic;
 using Image = System.Drawing.Image;
+using static SortPhotos.Core.Types;
 
 namespace MediaOrganiser
 {
@@ -44,6 +45,9 @@ namespace MediaOrganiser
         // Synchronization context for UI thread operations
         private SynchronizationContext syncContext;
 
+        // Cancellation token source for document loading operations
+        private CancellationTokenSource loadingCts;
+
         /// <summary>
         /// Creates and initializes the document viewer control
         /// </summary>
@@ -55,6 +59,15 @@ namespace MediaOrganiser
             InitializeComponents();
         }
 
+        /// <summary>
+        /// Initializes all UI components for document viewing
+        /// </summary>
+        /// <summary>
+        /// Initializes all UI components for document viewing
+        /// </summary>
+        /// <summary>
+        /// Initializes all UI components for document viewing
+        /// </summary>
         /// <summary>
         /// Initializes all UI components for document viewing
         /// </summary>
@@ -90,47 +103,64 @@ namespace MediaOrganiser
 
             loadingPanel.Controls.Add(loadingLabel);
 
-            // Create PDF navigation panel
+            // Create PDF navigation panel with left-aligned buttons
             pdfNavigationPanel = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 40,
+                Height = 70,
                 BackColor = System.Drawing.Color.LightGray,
                 Visible = false
             };
 
+            // Use a simple flow layout but align to the left
+            var flowLayout = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                Padding = new Padding(20, 15, 20, 10), // Good padding
+                AutoSize = true
+            };
+
+            // Create buttons with appropriate sizing
             btnPrevPage = new Button
             {
                 Text = "Previous",
-                Width = 80,
-                Height = 30,
-                Location = new System.Drawing.Point(10, 5),
-                Enabled = false
+                Width = 120,
+                Height = 45,
+                Enabled = false,
+                Margin = new Padding(0, 0, 10, 0), // Add some right margin for spacing between buttons
+                FlatStyle = FlatStyle.Standard // Standard button style
             };
 
             btnNextPage = new Button
             {
                 Text = "Next",
                 Width = 80,
-                Height = 30,
-                Location = new System.Drawing.Point(100, 5),
-                Enabled = false
+                Height = 45,
+                Enabled = false,
+                Margin = new Padding(0, 0, 20, 0), // Add more right margin after Next button
+                FlatStyle = FlatStyle.Standard
             };
 
             lblPageInfo = new Label
             {
                 Text = "Page: 0 / 0",
                 AutoSize = true,
-                TextAlign = ContentAlignment.MiddleCenter,
-                Location = new System.Drawing.Point(200, 10)
+                TextAlign = ContentAlignment.MiddleLeft, // Left align the text
+                Padding = new Padding(0, 8, 0, 0), // Top padding to vertically center with buttons
+                MinimumSize = new System.Drawing.Size(150, 35)
             };
 
             btnPrevPage.Click += (s, e) => ShowPdfPage(currentPdfPage - 1);
             btnNextPage.Click += (s, e) => ShowPdfPage(currentPdfPage + 1);
 
-            pdfNavigationPanel.Controls.Add(btnPrevPage);
-            pdfNavigationPanel.Controls.Add(btnNextPage);
-            pdfNavigationPanel.Controls.Add(lblPageInfo);
+            // Add controls to flow layout in left-to-right order
+            flowLayout.Controls.Add(btnPrevPage);
+            flowLayout.Controls.Add(btnNextPage);
+            flowLayout.Controls.Add(lblPageInfo);
+
+            pdfNavigationPanel.Controls.Add(flowLayout);
 
             // Create panel for PDF display
             pdfPanel = new Panel
@@ -219,12 +249,13 @@ namespace MediaOrganiser
         {
             try
             {
+                // Cancel any existing document loading operation
+                loadingCts?.Cancel();
+                loadingCts = new CancellationTokenSource();
+
                 // Store the document path
                 currentDocumentPath = filePath;
                 currentDocumentExt = Path.GetExtension(filePath).ToLower();
-
-                // Reset state
-                ResetViewers();
 
                 // Make sure file exists
                 if (!File.Exists(filePath))
@@ -234,7 +265,9 @@ namespace MediaOrganiser
                 }
 
                 // Show loading indicator while we process the document
-                loadingPanel.Visible = true;
+                SafeInvokeOnUIThread(() => {
+                    loadingPanel.Visible = true;
+                });
 
                 // Process by file type
                 switch (currentDocumentExt)
@@ -243,11 +276,11 @@ namespace MediaOrganiser
                         LoadTextDocument(filePath);
                         break;
                     case ".pdf":
-                        LoadPdfDocumentAsync(filePath);
+                        LoadPdfDocumentAsync(filePath, loadingCts.Token);
                         break;
                     case ".doc":
                     case ".docx":
-                        LoadWordDocumentAsync(filePath);
+                        LoadWordDocument(filePath, loadingCts.Token);
                         break;
                     default:
                         LoadUnsupportedDocument(filePath);
@@ -285,25 +318,56 @@ namespace MediaOrganiser
         }
 
         /// <summary>
-        /// Loads a PDF document using IronPDF
+        /// Loads a PDF document using IronPDF with cancellation support
         /// </summary>
-        async void LoadPdfDocumentAsync(string filePath)
+        async void LoadPdfDocumentAsync(string filePath, CancellationToken cancellationToken)
         {
             try
             {
                 // Load PDF on a background thread to keep UI responsive
-                await Task.Run(() => {
+                await Task.Run(async () => {
                     try
                     {
-                        // Load the PDF using IronPDF
-                        currentPdfDocument = new PdfDocument(filePath);
+                        // Add a timeout for loading the PDF
+                        var loadPdfTask = Task.Run(() => new PdfDocument(filePath), cancellationToken);
+
+                        // Wait for the task to complete with a timeout
+                        if (await Task.WhenAny(loadPdfTask, Task.Delay(15000, cancellationToken)) != loadPdfTask)
+                        {
+                            if (!cancellationToken.IsCancellationRequested)
+                            {
+                                throw new TimeoutException("PDF loading timed out after 15 seconds");
+                            }
+                            return; // Cancelled
+                        }
+
+                        if (cancellationToken.IsCancellationRequested) return;
+
+                        // Get the loaded PDF document
+                        currentPdfDocument = await loadPdfTask;
                         totalPdfPages = currentPdfDocument.PageCount;
 
-                        var images = currentPdfDocument.ToBitmap(150);
+                        // Add a timeout for rendering the PDF
+                        var renderTask = Task.Run(() => currentPdfDocument.ToBitmap(150), cancellationToken);
+
+                        if (await Task.WhenAny(renderTask, Task.Delay(15000, cancellationToken)) != renderTask)
+                        {
+                            if (!cancellationToken.IsCancellationRequested)
+                            {
+                                throw new TimeoutException("PDF rendering timed out after 15 seconds");
+                            }
+                            return; // Cancelled
+                        }
+
+                        if (cancellationToken.IsCancellationRequested) return;
+
+                        // Get the rendered images
+                        var images = await renderTask;
                         var pages = new List<System.Drawing.Image>();
 
                         foreach (var img in images)
                         {
+                            if (cancellationToken.IsCancellationRequested) return;
                             pages.Add(img);
                         }
 
@@ -313,88 +377,148 @@ namespace MediaOrganiser
                         currentPdfPage = 0;
 
                         SafeInvokeOnUIThread(() => {
-                            ShowPdfPage(0);
-                            pdfPanel.Visible = true;
-                            pdfNavigationPanel.Visible = true;
-                            loadingPanel.Visible = false;
-                            Debug.WriteLine("PDF loaded successfully with IronPDF");
+                            if (!cancellationToken.IsCancellationRequested)
+                            {
+                                ShowPdfPage(0);
+                                pdfPanel.Visible = true;
+                                pdfNavigationPanel.Visible = true;
+                                loadingPanel.Visible = false;
+                                Debug.WriteLine("PDF loaded successfully with IronPDF");
+                            }
                         });
                     }
                     catch (Exception ex)
                     {
-                        Debug.WriteLine($"Error rendering PDF with IronPDF: {ex.Message}");
-                        SafeInvokeOnUIThread(() => {
-                            ShowErrorMessage($"Error rendering PDF: {ex.Message}");
-                        });
+                        if (!cancellationToken.IsCancellationRequested)
+                        {
+                            Debug.WriteLine($"Error rendering PDF with IronPDF: {ex.Message}");
+                            SafeInvokeOnUIThread(() => {
+                                ShowErrorMessage($"Error rendering PDF: {ex.Message}");
+                            });
+                        }
                     }
-                });
+                }, cancellationToken);
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"PDF loading error: {ex.Message}");
-                ShowErrorMessage($"Error loading PDF: {ex.Message}");
+                if (!cancellationToken.IsCancellationRequested)
+                {
+                    Debug.WriteLine($"PDF loading error: {ex.Message}");
+                    ShowErrorMessage($"Error loading PDF: {ex.Message}");
+                }
             }
         }
 
         /// <summary>
         /// Loads and displays a Word document by converting it to PDF using IronPDF
         /// </summary>
-        async void LoadWordDocumentAsync(string filePath)
+        async void LoadWordDocument(string filePath, CancellationToken cancellationToken)
         {
             try
             {
-                SafeInvokeOnUIThread(() => {
+                SafeInvokeOnUIThread(() =>
+                {
                     loadingLabel.Text = "Converting Word document...";
                 });
 
-                // Convert and load on a background thread to keep UI responsive
-                await Task.Run(() => {
+                // Start completely detached rendering process that won't interact with UI until done
+                await Task.Run(async () =>
+                {
                     try
                     {
-                       
-                        // Convert Word to PDF using IronPDF's built-in converter
+                        // Create all resources locally within this task
                         var renderer = new DocxToPdfRenderer();
-                        // Render from DOCX file
-                        var pdfDocument = renderer.RenderDocxAsPdf(filePath);
-                                                          
-                        totalPdfPages = pdfDocument.PageCount;
 
-                        var images = pdfDocument.ToBitmap(150);
+                        // Add a timeout for the Word to PDF conversion
+                        var convertTask = Task.Run(() => renderer.RenderDocxAsPdf(filePath), cancellationToken);
+
+                        // Wait for the task to complete with a timeout
+                        if (await Task.WhenAny(convertTask, Task.Delay(30000, cancellationToken)) != convertTask)
+                        {
+                            if (!cancellationToken.IsCancellationRequested)
+                            {
+                                throw new TimeoutException("Word document conversion timed out after 30 seconds");
+                            }
+                            return; // Cancelled
+                        }
+
+                        if (cancellationToken.IsCancellationRequested) return;
+
+                        // Get the converted PDF
+                        var pdf = await convertTask;
+
+                        // Get page count
+                        var pageCount = pdf.PageCount;
+
+                        // Add a timeout for converting to bitmaps
+                        var renderTask = Task.Run(() => pdf.ToBitmap(150), cancellationToken);
+
+                        if (await Task.WhenAny(renderTask, Task.Delay(15000, cancellationToken)) != renderTask)
+                        {
+                            if (!cancellationToken.IsCancellationRequested)
+                            {
+                                throw new TimeoutException("PDF rendering timed out after 15 seconds");
+                            }
+                            return; // Cancelled
+                        }
+
+                        if (cancellationToken.IsCancellationRequested) return;
+
+                        // Get the rendered images
+                        var images = await renderTask;
                         var pages = new List<System.Drawing.Image>();
 
                         foreach (var img in images)
                         {
+                            if (cancellationToken.IsCancellationRequested) return;
                             pages.Add(img);
                         }
 
-                        pdfPageImages = pages.ToArray();
+                        var pageImages = pages.ToArray();
 
-                        // Show the first page
-                        currentPdfPage = 0;
-
-                        SafeInvokeOnUIThread(() => {
-                            ShowPdfPage(0);
-                            pdfPanel.Visible = true;
-                            pdfNavigationPanel.Visible = true;
-                            loadingPanel.Visible = false;
-                            Debug.WriteLine("Word document converted and loaded successfully");
+                        // Only once everything is ready, update UI
+                        SafeInvokeOnUIThread(() =>
+                        {
+                            if (!cancellationToken.IsCancellationRequested)
+                            {
+                                pdfPageImages = pageImages;
+                                totalPdfPages = pageCount;
+                                currentPdfPage = 0;
+                                ShowPdfPage(0);
+                                pdfPanel.Visible = true;
+                                pdfNavigationPanel.Visible = true;
+                                loadingPanel.Visible = false;
+                                Debug.WriteLine("Word document converted and loaded successfully");
+                            }
                         });
                     }
                     catch (Exception ex)
                     {
-                        Debug.WriteLine($"Error converting Word document: {ex.Message}");
-                        SafeInvokeOnUIThread(() => {
-                            // Fall back to external app if conversion fails
-                            CleanupPdfResources();
-                            ShowWordExternalOpenPanel(filePath);
-                        });
+                        if (!cancellationToken.IsCancellationRequested)
+                        {
+                            Debug.WriteLine($"Word document conversion failed: {ex.Message}");
+                            SafeInvokeOnUIThread(() =>
+                            {
+                                ShowWordExternalOpenPanel(filePath);
+                            });
+                        }
                     }
-                });
+                }, cancellationToken);
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Word document loading error: {ex.Message}");
-                ShowErrorMessage($"Error loading Word document: {ex.Message}");
+                if (!cancellationToken.IsCancellationRequested)
+                {
+                    Debug.WriteLine($"Word document loading error: {ex.Message}");
+                    ShowErrorMessage($"Error loading Word document: {ex.Message}");
+                    Debug.WriteLine($"Error converting Word document: {ex.Message}");
+                    SafeInvokeOnUIThread(() =>
+                    {
+                        // Fall back to external app if conversion fails
+                        CleanupPdfResources();
+                        ShowWordExternalOpenPanel(filePath);
+                    });
+                }
             }
         }
 
@@ -474,7 +598,7 @@ namespace MediaOrganiser
             {
                 pageIndex = 0;
             }
-   
+
             try
             {
                 // Clean up old image if there is one
@@ -487,7 +611,7 @@ namespace MediaOrganiser
                 // Show the new page
                 pdfPictureBox.Image = pdfPageImages[pageIndex];
                 currentPdfPage = pageIndex;
-                lblPageInfo.Text = $"Page: {pageIndex + 1} / {totalPdfPages}";
+                lblPageInfo.Text = $"Page: {pageIndex + 1}/{totalPdfPages}";
 
                 // Update button states
                 btnPrevPage.Enabled = pageIndex > 0;
@@ -639,6 +763,11 @@ namespace MediaOrganiser
                 try
                 {
                     Debug.WriteLine("Disposing DocumentViewerControl");
+
+                    // Cancel any active loading operations
+                    loadingCts?.Cancel();
+                    loadingCts?.Dispose();
+                    loadingCts = null;
 
                     // Close any open documents
                     ResetViewers();

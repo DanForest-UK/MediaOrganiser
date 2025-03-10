@@ -77,6 +77,8 @@
             // 
             // lblStatus
             // 
+            // lblStatus
+            lblStatus.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             lblStatus.Location = new System.Drawing.Point(50, 943);
             lblStatus.Name = "lblStatus";
             lblStatus.Size = new System.Drawing.Size(1667, 32);
