@@ -92,8 +92,8 @@ namespace SortPhotos.Core
         public static Error ReadFileError(string filename, Error inner) =>
             DisplayError($"Error reading file: {filename}", inner);
 
-        public static Error UnableToMove(string fileName, string message, Error inner) =>
-            DisplayError($"Unable to move/copy file {fileName}: {message}", inner);
+        public static Error UnableToMove(string message, Error inner) =>
+            DisplayError($"Unable to move/copy file: {message}", inner);
 
         public static Error UnableToDelete(string fileName, string message, Error inner) =>
             DisplayError($"Unable to delete file {fileName}: {message}", inner);

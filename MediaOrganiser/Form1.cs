@@ -581,6 +581,17 @@ namespace MediaOrganiser
                                                MessageBoxButtons.OK,
                                                MessageBoxIcon.Warning)));
 
+            void OnError(Error error)
+            {
+                UpdateStatus("Status: Error during scan.");
+                ShowMessageBox(
+                    $"An error occurred while scanning: {error.Message}",
+                    "Scan Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                Debug.WriteLine($"Error details: {error}");
+            }
+
             /// <summary>
             /// Scans a directory for media files
             /// </summary>
@@ -599,39 +610,18 @@ namespace MediaOrganiser
                             var fileCount = fileResponse.Files.Length;
                             UpdateStatus($"Status: Found {fileCount} media files.");
 
-                            if (fileResponse.UserErrors.Length > 0)
-                            {
-                                var errorMessages = string.Join(Environment.NewLine,
-                                    from ue in fileResponse.UserErrors
-                                    select ue.message);
-
-                                ShowMessageBox(
-                                    $"Scan completed with some warnings:{Environment.NewLine}{errorMessages}",
+                            if (fileResponse.UserErrors.Length > 0)                            
+                                ErrorListForm.ShowErrors(
+                                    this,
                                     "Scan Warnings",
-                                    MessageBoxButtons.OK,
-                                    MessageBoxIcon.Warning);
-                            }
+                                    fileResponse.UserErrors);                            
                         },
-                        Left: error =>
-                        {
-                            UpdateStatus("Status: Error during scan.");
-                            ShowMessageBox(
-                                $"An error occurred while scanning: {error.Message}",
-                                "Scan Error",
-                                MessageBoxButtons.OK,
-                                MessageBoxIcon.Error);
-                            Debug.WriteLine($"Error details: {error}");
-                        });
+                        Left: OnError);
+                      
                 }
                 catch (Exception ex)
                 {
-                    UpdateStatus("Status: Error during scan.");
-                    ShowMessageBox(
-                        $"An unexpected error occurred: {ex.Message}",
-                        "Unexpected Error",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error);
-                    Debug.WriteLine($"Exception details: {ex}");
+                    OnError(Error.New(ex));
                 }
                 finally
                 {
@@ -689,6 +679,17 @@ namespace MediaOrganiser
             if (destinationDialog.ShowDialog() != DialogResult.OK)
                 return;
 
+            void OnError(Error error)
+            {
+                UpdateStatus("Status: Unexpected error during file organisation.");
+                ShowMessageBox(
+                    $"An unexpected error occurred: {error.Message}",
+                    "Unexpected Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                Debug.WriteLine($"Error details: {error}");
+            }
+
             try
             {
                 ObservableState.SetWorkInProgress(true);
@@ -697,48 +698,28 @@ namespace MediaOrganiser
                 var result = await mediaService.OrganizeFilesAsync(destinationDialog.SelectedPath);
 
                 result.Match(
-                    Right: fileResponse =>
+                    Right: organiseResponse =>
                     {
                         UpdateStatus($"Media organised.");
 
-                        if (fileResponse.UserErrors.Length > 0)
-                        {
-                            var errorMessages = string.Join(
-                                Environment.NewLine,
-                                from ue in fileResponse.UserErrors
-                                select ue.message);
-
-                            ShowMessageBox(
-                                $"Organisation completed with some warnings:{Environment.NewLine}{errorMessages}",
+                        if (organiseResponse.UserErrors.Length > 0)
+                            ErrorListForm.ShowErrors(
+                                this,
                                 "Organise Warnings",
-                                MessageBoxButtons.OK,
-                                MessageBoxIcon.Warning);
-                        }
+                                organiseResponse.UserErrors);
                     },
-                    Left: error =>
-                    {
-                        UpdateStatus("Status: Error during organise.");
-                        ShowMessageBox(
-                            $"An error occurred while organising: {error.Message}",
-                            "Organise Error",
-                            MessageBoxButtons.OK,
-                            MessageBoxIcon.Error);
-                        Debug.WriteLine($"Error details: {error}");
-                    });
+                    Left: OnError);
+                   
             }
             catch (Exception ex)
             {
-                UpdateStatus("Status: Unexpected error during file organisation.");
-                ShowMessageBox(
-                    $"An unexpected error occurred: {ex.Message}",
-                    "Unexpected Error",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
-                Debug.WriteLine($"Exception details: {ex}");
+                OnError(Error.New(ex));
             }
             finally
             {
                 ObservableState.SetWorkInProgress(false);
+                ObservableState.ClearFiles();
+                StateSerializer.DeleteState();
             }
         }
 
