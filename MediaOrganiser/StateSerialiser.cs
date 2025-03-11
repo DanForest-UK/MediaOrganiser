@@ -78,12 +78,20 @@ namespace MediaOrganiser
                 if (serializableState == null)
                     return None;
 
-                return serializableState.ToAppModel();
+                // Filter out any file we can't find or have an error trying to find
+                var presentFiles = serializableState.Files.Where(f => 
+                    Try.lift(() => File.Exists(f.FullPath.Value)) 
+                        .IfFail(err => false)).ToArray();
+
+                if (!presentFiles.Any())
+                    return None;
+
+                return (serializableState with { Files = presentFiles }).ToAppModel();
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error loading state: {ex.Message}");
-                return null;
+                return None;
             }
         }
 
@@ -92,8 +100,8 @@ namespace MediaOrganiser
                 Files: model.Files.Values.ToArray(),
                 CurrentFileId: model.CurrentFile.Map(v => v.Value).IfNone(0),
                 CurrentFolder: model.CurrentFolder.Map(v => v.Value).IfNone(""),
-                CopyOnly: model.CopyOnly,
-                SortByYear: model.SortByYear);
+                CopyOnly: model.CopyOnly.Value,
+                SortByYear: model.SortByYear.Value);
 
         public static AppModel ToAppModel(this SerializableAppModel model) =>
             new AppModel(
@@ -105,7 +113,8 @@ namespace MediaOrganiser
                 CurrentFile: model.CurrentFileId == 0
                     ? None
                     : new FileId(model.CurrentFileId),
-                SortByYear: model.SortByYear);
+                CopyOnly: new CopyOnly(model.CopyOnly),
+                SortByYear: new SortByYear(model.SortByYear));
       
 
         /// <summary>

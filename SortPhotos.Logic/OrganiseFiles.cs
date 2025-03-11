@@ -18,9 +18,9 @@ namespace SortPhotos.Logic
 {
     public static class OrganiseFiles
     {
-        public static IO<Seq<UserError>> DoOrganiseFiles(Seq<MediaInfo> files, string destinationBasePath, bool copyOnly, bool sortByYear = false) =>
+        public static IO<Seq<UserError>> DoOrganiseFiles(Seq<MediaInfo> files, string destinationBasePath, CopyOnly copyOnly, SortByYear sortByYear) =>
             from moveErrors in MoveFilesToKeep(files, destinationBasePath, copyOnly, sortByYear)
-            from binErrors in copyOnly
+            from binErrors in copyOnly.Value
                 ? IO.pure<Seq<UserError>>(default)
                 : DeleteFilesToBin(files)
             select binErrors.Concat(moveErrors);
@@ -28,7 +28,7 @@ namespace SortPhotos.Logic
         /// <summary>
         /// Organizes files based on their state (Keep or Bin)
         /// </summary>
-        static IO<Seq<UserError>> MoveFilesToKeep(Seq<MediaInfo> files, string destinationBasePath, bool copyOnly, bool sortByYear) =>
+        static IO<Seq<UserError>> MoveFilesToKeep(Seq<MediaInfo> files, string destinationBasePath, CopyOnly copyOnly, SortByYear sortByYear) =>
             from keep in IO.pure(files.Where(f => f.State == FileState.Keep)
                 .Map(f => MoveFile(f, destinationBasePath, copyOnly, sortByYear)))
             from result in keep.ExtractUserErrors()
@@ -54,15 +54,15 @@ namespace SortPhotos.Logic
                 _ => "Other"
             };
 
-        static IO<Unit> MoveFile(MediaInfo file, string destinationBasePath, bool copyOnly, bool sortByYear) =>
+        static IO<Unit> MoveFile(MediaInfo file, string destinationBasePath, CopyOnly copyOnly, SortByYear sortByYear) =>
             (from folderName in IO.pure(FolderName(file.Category))
-             from targetDir in sortByYear
+             from targetDir in sortByYear.Value
                 ? CreateDirectory(destinationBasePath, folderName, file.Date.Value.Year.ToString())
                 : CreateDirectory(destinationBasePath, folderName)
              from targetPath in IO.lift(() =>
              {
                  var targetPath = Path.Combine(targetDir, file.FileName.Value + file.Extension.Value);
-                 if (copyOnly)
+                 if (copyOnly.Value)
                  {
                      File.Copy(file.FullPath.Value, targetPath, true);
                  }

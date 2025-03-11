@@ -20,7 +20,12 @@ namespace MusicTools.Logic
     {
         // Thread safe and atomic management of state
         static readonly Atom<AppModel> stateAtom = Atom(new AppModel(
-            Files: new Map<FileId, MediaInfo>()));
+            Files: new Map<FileId, MediaInfo>(),
+            WorkInProgress: false,
+            CurrentFolder: None,
+            CurrentFile: None,
+            CopyOnly: new CopyOnly(false),
+            SortByYear: new SortByYear(true)));
 
         // Event that fires when state changes
         public static event EventHandler<AppModel>? StateChanged;
@@ -73,13 +78,13 @@ namespace MusicTools.Logic
         /// Sets the copy only flag
         /// </summary>
         public static void SetCopyOnly(bool copyOnly) =>
-            Update(stateAtom.Value with { CopyOnly = copyOnly });
+            Update(stateAtom.Value with { CopyOnly = new CopyOnly(copyOnly) });
 
         /// <summary>
         /// Sets the sort by year flag
         /// </summary>
         public static void SetSortByYear(bool sortByYear) =>
-            Update(stateAtom.Value with { SortByYear = sortByYear });
+            Update(stateAtom.Value with { SortByYear = new SortByYear(sortByYear) });
 
         /// <summary>
         /// Sets the current file to display

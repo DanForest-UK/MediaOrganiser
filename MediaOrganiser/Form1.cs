@@ -149,8 +149,8 @@ namespace MediaOrganiser
             if (!state.WorkInProgress) progressScan.Value = 0;
 
             // Update CopyOnly checkbox
-            chkCopyOnly.Checked = state.CopyOnly;
-            chkSortByYear.Checked = state.SortByYear;
+            chkCopyOnly.Checked = state.CopyOnly.Value;
+            chkSortByYear.Checked = state.SortByYear.Value;
 
             UpdateMediaDisplay(state);
 
@@ -579,6 +579,14 @@ namespace MediaOrganiser
         /// </summary>
         async void btnScanFiles_Click(object sender, EventArgs e)
         {
+            if (ObservableState.Current.Files.Keys.Any())
+            {
+                var confirmResult = MessageBox.Show(this, "You currenlt have files in session, this will reset and you will lose any work in progress",
+              "Confirm Rescan", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+                if (confirmResult != DialogResult.Yes)
+                    return;
+            }
             StateSerializer.DeleteState();
 
             await Task.Run(() =>
@@ -662,7 +670,7 @@ namespace MediaOrganiser
             var keepCount = fileCount - binCount;
             var copyOnly = ObservableState.Current.CopyOnly;
 
-            var confirmMessage = copyOnly
+            var confirmMessage = copyOnly.Value
                 ? $"You are about to:{Environment.NewLine}{Environment.NewLine}" +
                   $"• Copy {keepCount} file(s) marked for keeping{Environment.NewLine}" +
                   $"• No files will be deleted (Copy only mode){Environment.NewLine}{Environment.NewLine}" +

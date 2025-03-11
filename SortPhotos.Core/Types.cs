@@ -12,11 +12,11 @@ namespace SortPhotos.Core
     {
         public record AppModel(
             Map<FileId, MediaInfo> Files,
-            bool WorkInProgress = false,
-            Option<FolderPath> CurrentFolder = default,
-            Option<FileId> CurrentFile = default,
-            bool CopyOnly = false,
-            bool SortByYear = false);
+            bool WorkInProgress,
+            Option<FolderPath> CurrentFolder,
+            Option<FileId> CurrentFile,
+            CopyOnly CopyOnly,
+            SortByYear SortByYear);
 
         public record FileId(int Value) : IComparable<FileId>
         {
@@ -31,6 +31,8 @@ namespace SortPhotos.Core
         public record Size(long Value);
         public record Date(DateTime Value);
         public record FolderPath(string Value);
+        public record CopyOnly(bool Value);
+        public record SortByYear(bool Value);
 
         public enum FileCategory
         {
