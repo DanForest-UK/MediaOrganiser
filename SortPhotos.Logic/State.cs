@@ -25,7 +25,8 @@ namespace MusicTools.Logic
             CurrentFolder: None,
             CurrentFile: None,
             CopyOnly: new CopyOnly(false),
-            SortByYear: new SortByYear(true)));
+            SortByYear: new SortByYear(true),
+            KeepParentFolder: new KeepParentFolder(false)));
 
         // Event that fires when state changes
         public static event EventHandler<AppModel>? StateChanged;
@@ -87,11 +88,17 @@ namespace MusicTools.Logic
             Update(stateAtom.Value with { SortByYear = new SortByYear(sortByYear) });
 
         /// <summary>
+        /// Sets the keep parent folder flag
+        /// </summary>
+        public static void SetKeepParentFolder(bool keepParentFolder) =>
+            Update(stateAtom.Value with { KeepParentFolder = new KeepParentFolder(keepParentFolder) });
+
+        /// <summary>
         /// Sets the current file to display
         /// </summary>
         public static void SetCurrentFile(FileId fileId) =>
-            Update(stateAtom.Value with { CurrentFile = Some(fileId)});
-          
+            Update(stateAtom.Value with { CurrentFile = Some(fileId) });
+
 
         /// <summary>
         /// Move to the next file in the collection

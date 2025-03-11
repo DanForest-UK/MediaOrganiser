@@ -19,7 +19,13 @@ namespace MediaOrganiser
         /// <summary>
         /// A serializable version of the application state
         /// </summary>
-        public record SerializableAppModel(MediaInfo[] Files, int CurrentFileId, string CurrentFolder, bool CopyOnly, bool SortByYear);
+        public record SerializableAppModel(
+            MediaInfo[] Files,
+            int CurrentFileId,
+            string CurrentFolder,
+            bool CopyOnly,
+            bool SortByYear,
+            bool KeepParentFolder);
 
         const string StateFileName = "appstate.json";
 
@@ -59,7 +65,7 @@ namespace MediaOrganiser
                 System.Diagnostics.Debug.WriteLine($"Error saving state: {ex.Message}");
             }
         }
-        
+
 
         /// <summary>
         /// Attempts to load saved state from disk
@@ -79,8 +85,8 @@ namespace MediaOrganiser
                     return None;
 
                 // Filter out any file we can't find or have an error trying to find
-                var presentFiles = serializableState.Files.Where(f => 
-                    Try.lift(() => File.Exists(f.FullPath.Value)) 
+                var presentFiles = serializableState.Files.Where(f =>
+                    Try.lift(() => File.Exists(f.FullPath.Value))
                         .IfFail(err => false)).ToArray();
 
                 if (!presentFiles.Any())
@@ -101,7 +107,8 @@ namespace MediaOrganiser
                 CurrentFileId: model.CurrentFile.Map(v => v.Value).IfNone(0),
                 CurrentFolder: model.CurrentFolder.Map(v => v.Value).IfNone(""),
                 CopyOnly: model.CopyOnly.Value,
-                SortByYear: model.SortByYear.Value);
+                SortByYear: model.SortByYear.Value,
+                KeepParentFolder: model.KeepParentFolder.Value);
 
         public static AppModel ToAppModel(this SerializableAppModel model) =>
             new AppModel(
@@ -114,8 +121,9 @@ namespace MediaOrganiser
                     ? None
                     : new FileId(model.CurrentFileId),
                 CopyOnly: new CopyOnly(model.CopyOnly),
-                SortByYear: new SortByYear(model.SortByYear));
-      
+                SortByYear: new SortByYear(model.SortByYear),
+                KeepParentFolder: new KeepParentFolder(model.KeepParentFolder));
+
 
         /// <summary>
         /// Deletes the saved state file if it exists
@@ -136,5 +144,5 @@ namespace MediaOrganiser
                 System.Diagnostics.Debug.WriteLine($"Error deleting state file: {ex.Message}");
             }
         }
-    }  
+    }
 }

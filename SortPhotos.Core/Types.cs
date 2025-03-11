@@ -16,7 +16,8 @@ namespace SortPhotos.Core
             Option<FolderPath> CurrentFolder,
             Option<FileId> CurrentFile,
             CopyOnly CopyOnly,
-            SortByYear SortByYear);
+            SortByYear SortByYear,
+            KeepParentFolder KeepParentFolder);
 
         public record FileId(int Value) : IComparable<FileId>
         {
@@ -33,6 +34,7 @@ namespace SortPhotos.Core
         public record FolderPath(string Value);
         public record CopyOnly(bool Value);
         public record SortByYear(bool Value);
+        public record KeepParentFolder(bool Value);
 
         public enum FileCategory
         {

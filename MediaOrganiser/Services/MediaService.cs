@@ -51,7 +51,8 @@ namespace MediaOrganiser.Services
                         ObservableState.Current.Files.Values.ToSeq(),
                         destinationPath,
                         ObservableState.Current.CopyOnly,
-                        ObservableState.Current.SortByYear).Run());
+                        ObservableState.Current.SortByYear,
+                        ObservableState.Current.KeepParentFolder).Run());
 
                 if (!result.Any())
                     ObservableState.ClearFiles();

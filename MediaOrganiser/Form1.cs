@@ -57,6 +57,9 @@ namespace MediaOrganiser
             ObservableState.StateChanged += OnStateChanged;
             InitializeVideoPlayer();
             InitializeDocumentViewer();
+
+            // Add event handler for KeepParentFolder checkbox
+            chkKeepParentFolder.CheckedChanged += chkKeepParentFolder_Changed;
         }
 
         /// <summary>
@@ -134,7 +137,7 @@ namespace MediaOrganiser
                                   currentFileIndex > 1 &&
                                   currentFileIndex <= state.Files.Count;
 
-            btnNext.Enabled = !state.WorkInProgress && 
+            btnNext.Enabled = !state.WorkInProgress &&
                               state.Files.Count > 0 &&
                               currentFileIndex < state.Files.Count;
 
@@ -151,6 +154,7 @@ namespace MediaOrganiser
             // Update CopyOnly checkbox
             chkCopyOnly.Checked = state.CopyOnly.Value;
             chkSortByYear.Checked = state.SortByYear.Value;
+            chkKeepParentFolder.Checked = state.KeepParentFolder.Value; // Added this line for the new checkbox
 
             UpdateMediaDisplay(state);
 
@@ -410,8 +414,6 @@ namespace MediaOrganiser
             }
         }
 
-
-
         // If you specifically need to run CheckSavedState on a background thread,
         // use this version instead:
         void CheckSavedStateAsync()
@@ -575,6 +577,12 @@ namespace MediaOrganiser
             ObservableState.SetSortByYear(chkSortByYear.Checked);
 
         /// <summary>
+        /// Handles the KeepParentFolder checkbox change
+        /// </summary>
+        void chkKeepParentFolder_Changed(object sender, EventArgs e) =>
+            ObservableState.SetKeepParentFolder(chkKeepParentFolder.Checked);
+
+        /// <summary>
         /// Handles file scanning
         /// </summary>
         async void btnScanFiles_Click(object sender, EventArgs e)
@@ -626,14 +634,14 @@ namespace MediaOrganiser
                             var fileCount = fileResponse.Files.Length;
                             UpdateStatus($"Status: Found {fileCount} media files.");
 
-                            if (fileResponse.UserErrors.Length > 0)                            
+                            if (fileResponse.UserErrors.Length > 0)
                                 ErrorListForm.ShowErrors(
                                     this,
                                     "Scan Warnings",
-                                    fileResponse.UserErrors);                            
+                                    fileResponse.UserErrors);
                         },
                         Left: OnError);
-                      
+
                 }
                 catch (Exception ex)
                 {
@@ -725,7 +733,7 @@ namespace MediaOrganiser
                                 organiseResponse.UserErrors);
                     },
                     Left: OnError);
-                   
+
             }
             catch (Exception ex)
             {
@@ -736,6 +744,7 @@ namespace MediaOrganiser
                 ObservableState.SetWorkInProgress(false);
                 ObservableState.ClearFiles();
                 StateSerializer.DeleteState();
+                ShowMessageBox("Organise complete!", "Finished", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 

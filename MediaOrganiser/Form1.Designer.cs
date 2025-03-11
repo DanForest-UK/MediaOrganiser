@@ -32,6 +32,7 @@
             btnOrganiseFiles = new Button();
             chkCopyOnly = new CheckBox();
             chkSortByYear = new CheckBox();
+            chkKeepParentFolder = new CheckBox();
             ((System.ComponentModel.ISupportInitialize)picCurrentImage).BeginInit();
             pnlButtons.SuspendLayout();
             pnlCenterButtons.SuspendLayout();
@@ -200,11 +201,23 @@
             chkSortByYear.Text = "Sort by year";
             chkSortByYear.UseVisualStyleBackColor = true;
             // 
+            // chkKeepParentFolder
+            // 
+            chkKeepParentFolder.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            chkKeepParentFolder.AutoSize = true;
+            chkKeepParentFolder.Location = new System.Drawing.Point(1701, 1326);
+            chkKeepParentFolder.Name = "chkKeepParentFolder";
+            chkKeepParentFolder.Size = new System.Drawing.Size(246, 36);
+            chkKeepParentFolder.TabIndex = 11;
+            chkKeepParentFolder.Text = "Keep parent folder";
+            chkKeepParentFolder.UseVisualStyleBackColor = true;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(13F, 32F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new System.Drawing.Size(2513, 1438);
+            Controls.Add(chkKeepParentFolder);
             Controls.Add(chkSortByYear);
             Controls.Add(chkCopyOnly);
             Controls.Add(btnOrganiseFiles);
@@ -243,5 +256,6 @@
         private Button btnOrganiseFiles;
         private CheckBox chkCopyOnly;
         private CheckBox chkSortByYear;
+        private CheckBox chkKeepParentFolder;
     }
 }
