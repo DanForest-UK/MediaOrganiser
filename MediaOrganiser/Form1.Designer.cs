@@ -54,14 +54,14 @@
             txtFolderPath.Location = new System.Drawing.Point(194, 33);
             txtFolderPath.Name = "txtFolderPath";
             txtFolderPath.ReadOnly = true;
-            txtFolderPath.Size = new System.Drawing.Size(1845, 39);
+            txtFolderPath.Size = new System.Drawing.Size(2123, 39);
             txtFolderPath.TabIndex = 1;
             // 
             // btnScanFiles
             // 
             btnScanFiles.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnScanFiles.Enabled = false;
-            btnScanFiles.Location = new System.Drawing.Point(2060, 29);
+            btnScanFiles.Location = new System.Drawing.Point(2338, 29);
             btnScanFiles.Name = "btnScanFiles";
             btnScanFiles.Size = new System.Drawing.Size(150, 46);
             btnScanFiles.TabIndex = 2;
@@ -72,17 +72,17 @@
             // progressScan
             // 
             progressScan.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            progressScan.Location = new System.Drawing.Point(50, 1003);
+            progressScan.Location = new System.Drawing.Point(50, 1380);
             progressScan.Name = "progressScan";
-            progressScan.Size = new System.Drawing.Size(2151, 46);
+            progressScan.Size = new System.Drawing.Size(2429, 46);
             progressScan.TabIndex = 4;
             // 
             // lblStatus
             // 
             lblStatus.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            lblStatus.Location = new System.Drawing.Point(50, 943);
+            lblStatus.Location = new System.Drawing.Point(50, 1320);
             lblStatus.Name = "lblStatus";
-            lblStatus.Size = new System.Drawing.Size(1667, 32);
+            lblStatus.Size = new System.Drawing.Size(1945, 32);
             lblStatus.TabIndex = 5;
             lblStatus.Text = "Ready";
             // 
@@ -93,7 +93,7 @@
             picCurrentImage.BorderStyle = BorderStyle.FixedSingle;
             picCurrentImage.Location = new System.Drawing.Point(50, 150);
             picCurrentImage.Name = "picCurrentImage";
-            picCurrentImage.Size = new System.Drawing.Size(2151, 773);
+            picCurrentImage.Size = new System.Drawing.Size(2429, 1150);
             picCurrentImage.SizeMode = PictureBoxSizeMode.Zoom;
             picCurrentImage.TabIndex = 6;
             picCurrentImage.TabStop = false;
@@ -152,7 +152,7 @@
             pnlButtons.Location = new System.Drawing.Point(50, 90);
             pnlButtons.Name = "pnlButtons";
             pnlButtons.Padding = new Padding(5);
-            pnlButtons.Size = new System.Drawing.Size(2151, 60);
+            pnlButtons.Size = new System.Drawing.Size(2429, 60);
             pnlButtons.TabIndex = 7;
             // 
             // pnlCenterButtons
@@ -160,7 +160,7 @@
             pnlCenterButtons.Anchor = AnchorStyles.None;
             pnlCenterButtons.Controls.Add(btnBin);
             pnlCenterButtons.Controls.Add(btnKeep);
-            pnlCenterButtons.Location = new System.Drawing.Point(975, 3);
+            pnlCenterButtons.Location = new System.Drawing.Point(1114, 3);
             pnlCenterButtons.Name = "pnlCenterButtons";
             pnlCenterButtons.Size = new System.Drawing.Size(320, 46);
             pnlCenterButtons.TabIndex = 3;
@@ -169,7 +169,7 @@
             // 
             btnOrganiseFiles.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             btnOrganiseFiles.Enabled = false;
-            btnOrganiseFiles.Location = new System.Drawing.Point(2051, 943);
+            btnOrganiseFiles.Location = new System.Drawing.Point(2329, 1320);
             btnOrganiseFiles.Name = "btnOrganiseFiles";
             btnOrganiseFiles.Size = new System.Drawing.Size(150, 46);
             btnOrganiseFiles.TabIndex = 8;
@@ -181,7 +181,7 @@
             // 
             chkCopyOnly.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             chkCopyOnly.AutoSize = true;
-            chkCopyOnly.Location = new System.Drawing.Point(1877, 952);
+            chkCopyOnly.Location = new System.Drawing.Point(2155, 1329);
             chkCopyOnly.Name = "chkCopyOnly";
             chkCopyOnly.Size = new System.Drawing.Size(154, 36);
             chkCopyOnly.TabIndex = 9;
@@ -193,7 +193,7 @@
             // 
             chkSortByYear.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             chkSortByYear.AutoSize = true;
-            chkSortByYear.Location = new System.Drawing.Point(1687, 952);
+            chkSortByYear.Location = new System.Drawing.Point(1965, 1329);
             chkSortByYear.Name = "chkSortByYear";
             chkSortByYear.Size = new System.Drawing.Size(174, 36);
             chkSortByYear.TabIndex = 10;
@@ -204,7 +204,7 @@
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(13F, 32F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new System.Drawing.Size(2235, 1061);
+            ClientSize = new System.Drawing.Size(2513, 1438);
             Controls.Add(chkSortByYear);
             Controls.Add(chkCopyOnly);
             Controls.Add(btnOrganiseFiles);

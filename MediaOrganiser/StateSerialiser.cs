@@ -6,6 +6,7 @@ using static LanguageExt.Prelude;
 using System.IO;
 using System.Runtime.CompilerServices;
 using SortPhotos.Core;
+using LanguageExt.Core;
 
 namespace MediaOrganiser
 {
@@ -43,18 +44,22 @@ namespace MediaOrganiser
         {
             try
             {
-                // Create a serializable version of the state
-                var serializableState = state.ToSerializableAppModel();
-                var json = JsonSerializer.Serialize(serializableState, SerializerOptions);
-                File.WriteAllText(GetStateFilePath(), json);
+                if (state.Files.Values.Any())
+                {
+                    // Create a serializable version of the state
+                    var serializableState = state.ToSerializableAppModel();
+                    var json = JsonSerializer.Serialize(serializableState, SerializerOptions);
+                    File.WriteAllText(GetStateFilePath(), json);
 
-                System.Diagnostics.Debug.WriteLine("State saved successfully");
+                    System.Diagnostics.Debug.WriteLine("State saved successfully");
+                }
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error saving state: {ex.Message}");
             }
         }
+        
 
         /// <summary>
         /// Attempts to load saved state from disk

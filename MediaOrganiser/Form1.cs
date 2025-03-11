@@ -60,6 +60,15 @@ namespace MediaOrganiser
         }
 
         /// <summary>
+        /// Loads previous session or directory on form load
+        /// </summary>
+        void Form1_Load(object sender, EventArgs e)
+        {
+            LoadLastDirectory();
+            CheckSavedStateAsync();
+        }
+
+        /// <summary>
         /// Initializes the video player control
         /// </summary>
         void InitializeVideoPlayer()
@@ -393,34 +402,43 @@ namespace MediaOrganiser
             }
         }
 
-        /// <summary>
-        /// Loads previous session or directory on form load
-        /// </summary>
-        void Form1_Load(object sender, EventArgs e)
+
+
+        // If you specifically need to run CheckSavedState on a background thread,
+        // use this version instead:
+        void CheckSavedStateAsync()
         {
-            var savedState = StateSerializer.LoadState();
-
-            savedState.IfSome(state =>
+            Task.Run(() =>
             {
-                var result = MessageBox.Show(
-                    this,
-                    "Would you like to continue your previous session?",
-                    "Previous Session Found",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Question);
+                var savedState = StateSerializer.LoadState();
 
-                if (result == DialogResult.Yes)
+                if (savedState.Exists(s => s.Files.Keys.Any()))
                 {
-                    UpdateStatus("Previous session loaded");
-                    ObservableState.Update(state);
-                }
-                else
-                {
-                    StateSerializer.DeleteState();
+                    // Use BeginInvoke to marshal back to the UI thread
+                    this.BeginInvoke(() =>
+                    {
+                        savedState.IfSome(state =>
+                        {
+                            var result = MessageBox.Show(
+                                this,
+                                "Would you like to continue your previous session?",
+                                "Previous Session Found",
+                                MessageBoxButtons.YesNo,
+                                MessageBoxIcon.Question);
+
+                            if (result == DialogResult.Yes)
+                            {
+                                UpdateStatus("Previous session loaded");
+                                ObservableState.Update(state);
+                            }
+                            else
+                            {
+                                StateSerializer.DeleteState();
+                            }
+                        });
+                    });
                 }
             });
-
-            LoadLastDirectory();
         }
 
         /// <summary>
