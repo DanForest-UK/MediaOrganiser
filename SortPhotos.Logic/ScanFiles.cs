@@ -19,7 +19,7 @@ namespace SortPhotos.Logic
     {
         static readonly Seq<string> ImageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp"];
         static readonly Seq<string> VideoExtensions = [".mp4", ".avi", ".mov", ".wmv", ".mkv", ".flv", ".webm"];
-        static readonly Seq<string> DocumentExtensions = [".pdf", ".docx", ".doc", ".txt"];
+        static readonly Seq<string> DocumentExtensions = [".pdf", ".docx", ".doc", ".txt", ".rtf"];
 
         public static IO<FileResponse> DoScanFiles(string path) =>
              (from extensions in IO.pure(ImageExtensions.Concat(VideoExtensions).Concat(DocumentExtensions))
@@ -28,7 +28,7 @@ namespace SortPhotos.Logic
               from getFileInfoResult in getFilesResult.Succs
                                                       .Flatten()
                                                       .Map(CreateFileInfoAsync)
-                                                      .ExtractUserErrors()            
+                                                      .ExtractUserErrors()
               select new FileResponse(
                   UserErrors: getFileInfoResult.UserErrors.Concat(getFilesResult.UserErrors),
                   Files: getFileInfoResult.Succs)).Safe();
@@ -36,7 +36,7 @@ namespace SortPhotos.Logic
         static IO<Seq<string>> GetFilesWithExtension(string path, string extension) =>
             IO.lift(env => toSeq(Directory.GetFiles(path, $"*{extension}", SearchOption.AllDirectories)))
                 .HandleUnauthorised(path)
-                | @catch(e => IO.fail<Seq<string>>(AppErrors.GetFilesError(extension, e))); 
+                | @catch(e => IO.fail<Seq<string>>(AppErrors.GetFilesError(extension, e)));
 
         /// <summary>
         /// Adds file info for a file to the collection

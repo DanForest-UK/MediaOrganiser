@@ -20,6 +20,7 @@ namespace MediaOrganiser
     {
         // UI components
         private TextBox txtDocumentContent;
+        private RichTextBox rtfDocumentContent;
         private Panel loadingPanel;
         private Label loadingLabel;
         private Panel pdfPanel;
@@ -74,6 +75,16 @@ namespace MediaOrganiser
                 Visible = false
             };
             ThemeManager.StyleTextBox(txtDocumentContent);
+
+            // Create rich text viewer for RTF documents
+            rtfDocumentContent = new RichTextBox
+            {
+                ReadOnly = true,
+                ScrollBars = RichTextBoxScrollBars.Vertical,
+                Dock = DockStyle.Fill,
+                Visible = false
+            };
+            ThemeManager.StyleRichTextBox(rtfDocumentContent);
 
             // Create loading indicator
             loadingPanel = new Panel
@@ -199,6 +210,7 @@ namespace MediaOrganiser
 
             // Add controls to this control
             Controls.Add(txtDocumentContent);
+            Controls.Add(rtfDocumentContent);
             Controls.Add(loadingPanel);
             Controls.Add(pdfPanel);
             Controls.Add(pdfNavigationPanel);
@@ -268,6 +280,9 @@ namespace MediaOrganiser
                     case ".txt":
                         LoadTextDocument(filePath);
                         break;
+                    case ".rtf":
+                        LoadRtfDocument(filePath);
+                        break;
                     case ".pdf":
                         LoadPdfDocumentAsync(filePath, loadingCts.Token);
                         break;
@@ -300,6 +315,7 @@ namespace MediaOrganiser
                 SafeInvokeOnUIThread(() => {
                     txtDocumentContent.Text = text;
                     txtDocumentContent.Visible = true;
+                    rtfDocumentContent.Visible = false;
                     loadingPanel.Visible = false;
                 });
             }
@@ -307,6 +323,27 @@ namespace MediaOrganiser
             {
                 Debug.WriteLine($"Error loading text document: {ex.Message}");
                 ShowErrorMessage($"Error loading text file: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Loads and displays an RTF document
+        /// </summary>
+        void LoadRtfDocument(string filePath)
+        {
+            try
+            {
+                SafeInvokeOnUIThread(() => {
+                    rtfDocumentContent.LoadFile(filePath);
+                    rtfDocumentContent.Visible = true;
+                    txtDocumentContent.Visible = false;
+                    loadingPanel.Visible = false;
+                });
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error loading RTF document: {ex.Message}");
+                ShowErrorMessage($"Error loading RTF file: {ex.Message}");
             }
         }
 
@@ -530,7 +567,7 @@ namespace MediaOrganiser
 
                 Label infoLabel = new Label
                 {
-                    Text = $"Word Document: {Path.GetFileName(filePath)}",
+                    Text = $"Document: {Path.GetFileName(filePath)}",
                     AutoSize = false,
                     TextAlign = ContentAlignment.MiddleCenter,
                     Dock = DockStyle.Top,
@@ -550,9 +587,9 @@ namespace MediaOrganiser
 
                 Button openButton = new Button
                 {
-                    Text = "Open in Microsoft Word",
-                    Width = 200,
-                    Height = 40,
+                    Text = "Open",
+                    Width = 250,
+                    Height = 60,
                     Anchor = AnchorStyles.None
                 };
                 ThemeManager.StyleButton(openButton);
@@ -661,6 +698,7 @@ namespace MediaOrganiser
                 pdfPanel.Visible = false;
                 pdfNavigationPanel.Visible = false;
                 loadingPanel.Visible = false;
+                rtfDocumentContent.Visible = false;
                 txtDocumentContent.Text = message;
                 txtDocumentContent.Visible = true;
             });
@@ -675,6 +713,8 @@ namespace MediaOrganiser
                 // Hide existing viewers
                 txtDocumentContent.Visible = false;
                 txtDocumentContent.Text = string.Empty;
+                rtfDocumentContent.Visible = false;
+                rtfDocumentContent.Clear();
                 pdfPanel.Visible = false;
                 pdfNavigationPanel.Visible = false;
 
@@ -691,6 +731,7 @@ namespace MediaOrganiser
                 {
                     Control control = Controls[i];
                     if (control != txtDocumentContent &&
+                        control != rtfDocumentContent &&
                         control != pdfPanel &&
                         control != loadingPanel &&
                         control != pdfNavigationPanel)
@@ -771,6 +812,7 @@ namespace MediaOrganiser
 
                     // Dispose of controls
                     txtDocumentContent?.Dispose();
+                    rtfDocumentContent?.Dispose();
                     loadingPanel?.Dispose();
                     loadingLabel?.Dispose();
                     pdfPanel?.Dispose();
@@ -788,5 +830,5 @@ namespace MediaOrganiser
 
             base.Dispose(disposing);
         }
-    }  
+    }
 }

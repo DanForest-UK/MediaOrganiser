@@ -70,6 +70,15 @@ namespace MediaOrganiser
             return textBox;
         }
 
+        // Rich Text Box styling
+        public static RichTextBox StyleRichTextBox(RichTextBox rtfBox)
+        {
+            rtfBox.Font = DefaultFont;
+            rtfBox.BackColor = PrimaryBackColor;
+            rtfBox.BorderStyle = BorderStyle.FixedSingle;
+            return rtfBox;
+        }
+
         // Panel styling
         public static Panel StylePanel(Panel panel, Color? backColor = null)
         {
@@ -103,6 +112,9 @@ namespace MediaOrganiser
                         break;
                     case TextBox textBox:
                         StyleTextBox(textBox);
+                        break;
+                    case RichTextBox richTextBox:
+                        StyleRichTextBox(richTextBox);
                         break;
                     case Panel panel:
                         StylePanel(panel);
