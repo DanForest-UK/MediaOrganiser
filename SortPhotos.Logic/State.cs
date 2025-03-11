@@ -85,10 +85,8 @@ namespace MusicTools.Logic
         /// Sets the current file to display
         /// </summary>
         public static void SetCurrentFile(FileId fileId) =>
-            Update(stateAtom.Value with
-            {
-                CurrentFile = Option<FileId>.Some(fileId)
-            });
+            Update(stateAtom.Value with { CurrentFile = Some(fileId)});
+          
 
         /// <summary>
         /// Move to the next file in the collection

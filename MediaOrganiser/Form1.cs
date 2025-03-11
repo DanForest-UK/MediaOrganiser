@@ -123,14 +123,20 @@ namespace MediaOrganiser
 
             btnScanFiles.Enabled = !state.WorkInProgress && state.CurrentFolder.IsSome;
             btnBrowseFolder.Enabled = !state.WorkInProgress;
+
+
             btnBin.Enabled = !state.WorkInProgress && state.Files.Count > 0;
-            btnKeep.Enabled = !state.WorkInProgress && state.Files.Count > 0;
+            btnKeep.Enabled = !state.WorkInProgress &&
+                               state.Files.Count > 0;
 
             var currentFileIndex = state.CurrentFile.Map(i => i.Value).IfNone(0);
-            btnPrevious.Enabled = !state.WorkInProgress && state.Files.Count > 0 && currentFileIndex > 1;
+            btnPrevious.Enabled = !state.WorkInProgress && state.Files.Count > 0 &&
+                                  currentFileIndex > 1 &&
+                                  currentFileIndex <= state.Files.Count;
 
-            btnNext.Enabled = !state.WorkInProgress && state.Files.Count > 0 &&
-                              currentFileIndex > 0 && currentFileIndex < state.Files.Count;
+            btnNext.Enabled = !state.WorkInProgress && 
+                              state.Files.Count > 0 &&
+                              currentFileIndex < state.Files.Count;
 
             btnOrganiseFiles.Enabled = !state.WorkInProgress &&
                 (from f in state.Files.Values
@@ -175,21 +181,23 @@ namespace MediaOrganiser
                     var fileSizeText = FormatFileSize(mediaInfo.Size.Value);
                     var fullFileName = $"{mediaInfo.FileName.Value}.{mediaInfo.Extension.Value.TrimStart('.')}";
 
+                    var lastFileText = state.Files.Count() <= state.CurrentFile.Map(v => v.Value).IfNone(0)
+                        ? " : This is the final file"
+                        : "";
+
+                    var placeText = $"{state.CurrentFile.Map(v => v.Value).IfNone(0)} of {state.Files.Count()} files: ";
+
+                    UpdateStatus($"{placeText}{fullFileName} ({fileSizeText}) - {fileStatus}{lastFileText}");
+
                     if (mediaInfo.Category == FileCategory.Image)
-                    {
                         DisplayImage(mediaInfo);
-                        UpdateStatus($"Current file: {fullFileName} ({fileSizeText}) - {fileStatus}");
-                    }
+
                     else if (mediaInfo.Category == FileCategory.Video)
-                    {
                         DisplayVideo(mediaInfo);
-                        UpdateStatus($"Current file: {fullFileName} (Video, {fileSizeText}) - {fileStatus}");
-                    }
+
                     else if (mediaInfo.Category == FileCategory.Document)
-                    {
                         DisplayDocument(mediaInfo);
-                        UpdateStatus($"Current file: {fullFileName} (Document, {fileSizeText}) - {fileStatus}");
-                    }
+
                 },
                 None: () => UpdateStatus("No files selected"));
         }
