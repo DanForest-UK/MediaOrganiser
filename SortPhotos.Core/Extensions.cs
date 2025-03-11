@@ -8,6 +8,7 @@ using static LanguageExt.Prelude;
 using static SortPhotos.Core.Types;
 using LanguageExt.Traits;
 using static SortPhotos.Core.UserErrors;
+using System.IO;
 
 namespace SortPhotos.Core
 {
@@ -36,6 +37,15 @@ namespace SortPhotos.Core
         /// </summary>
         public static IO<A> Safe<A>(this IO<A> ma) =>
             ma | @catch(e => IO.fail<A>(AppErrors.ThereWasAProblem(e)));
+
+        public static IO<A> HandleUnauthorised<A>(this IO<A> ma, string path) =>
+            ma | @catch(e => e.HasException<UnauthorizedAccessException>(), e => IO.fail<A>(AppErrors.UnauthorisedAccess(path, e)));
+
+        public static IO<A> HandleFileNotFound<A>(this IO<A> ma, string path) =>
+            ma | @catch(e => e.HasException<FileNotFoundException>(), e => IO.fail<A>(AppErrors.FileNotFound(path, e)));
+
+        public static IO<A> HandleDirectoryNotFound<A>(this IO<A> ma, string path) =>
+         ma | @catch(e => e.HasException<DirectoryNotFoundException>(), e => IO.fail<A>(AppErrors.DirectoryNotFound(path, e)));
 
         public static IO<(Seq<A> Succs, Seq<UserError> UserErrors)> ExtractUserErrors<A>(this Seq<IO<A>> items) =>
             from infos in items.Partition()

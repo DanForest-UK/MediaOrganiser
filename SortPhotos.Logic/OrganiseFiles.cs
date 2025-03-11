@@ -42,6 +42,7 @@ namespace SortPhotos.Logic
 
         static IO<Unit> DeleteFile(string path) =>
             IO.lift(() => File.Delete(path))
+            .HandleUnauthorised(path)
             | @catch(err => IO.fail<Unit>(AppErrors.UnableToMove(path, err.Message, err)));
 
         static string FolderName(FileCategory category) =>
@@ -71,13 +72,17 @@ namespace SortPhotos.Logic
                  }
              })
              select unit)
+            .HandleUnauthorised(file.FullPath.Value)
+            .HandleFileNotFound(file.FullPath.Value)
+            .HandleDirectoryNotFound(file.FullPath.Value)
             | @catch(err => IO.fail<Unit>(AppErrors.UnableToMove(file.FullPath.Value, err.Message, err)));
 
         static IO<string> CreateDirectory(string destinationBasePath, string folderName, string year = "") =>
-            (from targetDir in IO.pure(string.IsNullOrEmpty(year)
+            (from targetDir in IO.pure(!year.HasValue()
                 ? Path.Combine(destinationBasePath, folderName)
                 : Path.Combine(destinationBasePath, folderName, year))
-             from _ in IO.lift(() => Directory.CreateDirectory(targetDir))
+             from _ in IO.lift(() => Directory.CreateDirectory(targetDir)).HandleUnauthorised(targetDir)
+             .HandleDirectoryNotFound(targetDir)
                 | @catch(err => IO.fail<DirectoryInfo>(AppErrors.UnableToCreateDirectory(targetDir, err.Message, err)))
              select targetDir);
     }

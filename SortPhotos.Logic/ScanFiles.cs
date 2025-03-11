@@ -35,7 +35,8 @@ namespace SortPhotos.Logic
 
         static IO<Seq<string>> GetFilesWithExtension(string path, string extension) =>
             IO.lift(env => toSeq(Directory.GetFiles(path, $"*{extension}", SearchOption.AllDirectories)))
-                | @catch(e => IO.fail<Seq<string>>(AppErrors.GetFilesError(extension, e))); // add specific unauthorised exct
+                .HandleUnauthorised(path)
+                | @catch(e => IO.fail<Seq<string>>(AppErrors.GetFilesError(extension, e))); 
 
         /// <summary>
         /// Adds file info for a file to the collection
@@ -64,7 +65,7 @@ namespace SortPhotos.Logic
                                 ? FileCategory.Document
                                 : FileCategory.Unknown,
                     FileState.Undecided);
-            })
+            }).HandleUnauthorised(path)
             | @catch(e => IO.fail<MediaInfo>(AppErrors.ReadFileError(path, e)));
     }
 }
