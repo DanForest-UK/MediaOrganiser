@@ -7,8 +7,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using IronPdf;
 using System.Collections.Generic;
+using System.Drawing;
 using Image = System.Drawing.Image;
 using static SortPhotos.Core.Types;
+using Color = System.Drawing.Color;
+using Point = System.Drawing.Point;
+using Size = System.Drawing.Size;
 
 namespace MediaOrganiser
 {
@@ -105,66 +109,64 @@ namespace MediaOrganiser
 
             loadingPanel.Controls.Add(loadingLabel);
 
-            // Create PDF navigation panel with left-aligned buttons
+            // Create PDF navigation panel
+            // Create navigation panel to match exactly the main form's panel
             pdfNavigationPanel = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 70,
-                Visible = false
+                Height = 58, // Match exactly with Form1's pnlButtons height
+                Visible = false,
+                BackColor = ThemeManager.SecondaryBackColor,
+                Padding = new Padding(6, 6, 6, 6) // Match exactly with Form1's pnlButtons padding
             };
-            ThemeManager.StylePanel(pdfNavigationPanel, ThemeManager.AccentBackColor);
 
-            // Use a simple flow layout but align to the left
-            var flowLayout = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.LeftToRight,
-                WrapContents = false,
-                Padding = new Padding(20, 15, 20, 10), // Good padding
-                AutoSize = true
-            };
-            ThemeManager.StylePanel(flowLayout, ThemeManager.AccentBackColor);
-
-            // Create buttons with appropriate sizing
+            // Create buttons that exactly match the main form's buttons
             btnPrevPage = new Button
             {
-                Text = "Previous",
-                Width = 80,
-                Height = 45,
+                Text = "Back",
+                Size = new Size(130, 45), // Match size with Form1
                 Enabled = false,
-                Margin = new Padding(0, 0, 10, 0) // Add some right margin for spacing between buttons
+                Location = new Point(4, 4),
+                Margin = new Padding(4, 4, 4, 4), // Explicit margin to match Form1
+                FlatStyle = FlatStyle.Flat,
+                UseVisualStyleBackColor = true,
+                Anchor = AnchorStyles.Left | AnchorStyles.Top
             };
-            ThemeManager.StyleButton(btnPrevPage);
 
             btnNextPage = new Button
             {
                 Text = "Next",
-                Width = 80,
-                Height = 45,
+                Size = new Size(130, 45), // Match size with Form1
                 Enabled = false,
-                Margin = new Padding(0, 0, 20, 0) // Add more right margin after Next button
+                Location = new Point(150, 4),
+                Margin = new Padding(4, 4, 4, 4), // Explicit margin to match Form1
+                FlatStyle = FlatStyle.Flat,
+                UseVisualStyleBackColor = true,
+                Anchor = AnchorStyles.Left | AnchorStyles.Top
             };
-            ThemeManager.StyleButton(btnNextPage);
+
+            // Apply theme styling
+            ThemeManager.StyleSecondaryButton(btnPrevPage);
+            ThemeManager.StyleSecondaryButton(btnNextPage);
 
             lblPageInfo = new Label
             {
                 Text = "Page: 0 / 0",
                 AutoSize = true,
-                TextAlign = ContentAlignment.MiddleLeft, // Left align the text
-                Padding = new Padding(0, 8, 0, 0), // Top padding to vertically center with buttons
-                MinimumSize = new System.Drawing.Size(150, 35)
+                TextAlign = ContentAlignment.MiddleLeft,
+                Location = new Point(290, 13), // Adjusted to be after the buttons
+                ForeColor = Color.Black,
+                Anchor = AnchorStyles.Left | AnchorStyles.Top
             };
             ThemeManager.StyleLabel(lblPageInfo);
 
             btnPrevPage.Click += (s, e) => ShowPdfPage(currentPdfPage - 1);
             btnNextPage.Click += (s, e) => ShowPdfPage(currentPdfPage + 1);
 
-            // Add controls to flow layout in left-to-right order
-            flowLayout.Controls.Add(btnPrevPage);
-            flowLayout.Controls.Add(btnNextPage);
-            flowLayout.Controls.Add(lblPageInfo);
-
-            pdfNavigationPanel.Controls.Add(flowLayout);
+            // Add controls directly to the panel
+            pdfNavigationPanel.Controls.Add(lblPageInfo);
+            pdfNavigationPanel.Controls.Add(btnNextPage);
+            pdfNavigationPanel.Controls.Add(btnPrevPage);
 
             // Create panel for PDF display
             pdfPanel = new Panel
