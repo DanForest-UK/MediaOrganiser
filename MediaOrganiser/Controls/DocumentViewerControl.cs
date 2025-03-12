@@ -129,7 +129,7 @@ namespace MediaOrganiser
             btnPrevPage = new Button
             {
                 Text = "Previous",
-                Width = 120,
+                Width = 80,
                 Height = 45,
                 Enabled = false,
                 Margin = new Padding(0, 0, 10, 0) // Add some right margin for spacing between buttons

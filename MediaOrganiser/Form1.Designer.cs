@@ -40,9 +40,10 @@
             // 
             // btnBrowseFolder
             // 
-            btnBrowseFolder.Location = new System.Drawing.Point(26, 28);
+            btnBrowseFolder.Location = new System.Drawing.Point(16, 15);
+            btnBrowseFolder.Margin = new Padding(4);
             btnBrowseFolder.Name = "btnBrowseFolder";
-            btnBrowseFolder.Size = new System.Drawing.Size(150, 46);
+            btnBrowseFolder.Size = new System.Drawing.Size(169, 45);
             btnBrowseFolder.TabIndex = 0;
             btnBrowseFolder.Text = "Browse...";
             btnBrowseFolder.UseVisualStyleBackColor = true;
@@ -52,19 +53,21 @@
             // 
             txtFolderPath.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             txtFolderPath.BorderStyle = BorderStyle.FixedSingle;
-            txtFolderPath.Location = new System.Drawing.Point(194, 33);
+            txtFolderPath.Location = new System.Drawing.Point(192, 18);
+            txtFolderPath.Margin = new Padding(4);
             txtFolderPath.Name = "txtFolderPath";
             txtFolderPath.ReadOnly = true;
-            txtFolderPath.Size = new System.Drawing.Size(2123, 39);
+            txtFolderPath.Size = new System.Drawing.Size(1437, 39);
             txtFolderPath.TabIndex = 1;
             // 
             // btnScanFiles
             // 
             btnScanFiles.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnScanFiles.Enabled = false;
-            btnScanFiles.Location = new System.Drawing.Point(2338, 29);
+            btnScanFiles.Location = new System.Drawing.Point(1638, 15);
+            btnScanFiles.Margin = new Padding(4);
             btnScanFiles.Name = "btnScanFiles";
-            btnScanFiles.Size = new System.Drawing.Size(150, 46);
+            btnScanFiles.Size = new System.Drawing.Size(169, 45);
             btnScanFiles.TabIndex = 2;
             btnScanFiles.Text = "Scan Files";
             btnScanFiles.UseVisualStyleBackColor = true;
@@ -73,17 +76,19 @@
             // progressScan
             // 
             progressScan.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            progressScan.Location = new System.Drawing.Point(50, 1380);
+            progressScan.Location = new System.Drawing.Point(16, 846);
+            progressScan.Margin = new Padding(4);
             progressScan.Name = "progressScan";
-            progressScan.Size = new System.Drawing.Size(2429, 46);
+            progressScan.Size = new System.Drawing.Size(1791, 32);
             progressScan.TabIndex = 4;
             // 
             // lblStatus
             // 
-            lblStatus.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            lblStatus.Location = new System.Drawing.Point(50, 1320);
+            lblStatus.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            lblStatus.Location = new System.Drawing.Point(16, 801);
+            lblStatus.Margin = new Padding(4, 0, 4, 0);
             lblStatus.Name = "lblStatus";
-            lblStatus.Size = new System.Drawing.Size(1945, 32);
+            lblStatus.Size = new System.Drawing.Size(740, 41);
             lblStatus.TabIndex = 5;
             lblStatus.Text = "Ready";
             // 
@@ -92,9 +97,10 @@
             picCurrentImage.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             picCurrentImage.BackColor = System.Drawing.Color.FromArgb(250, 250, 250);
             picCurrentImage.BorderStyle = BorderStyle.FixedSingle;
-            picCurrentImage.Location = new System.Drawing.Point(50, 150);
+            picCurrentImage.Location = new System.Drawing.Point(16, 134);
+            picCurrentImage.Margin = new Padding(4);
             picCurrentImage.Name = "picCurrentImage";
-            picCurrentImage.Size = new System.Drawing.Size(2429, 1150);
+            picCurrentImage.Size = new System.Drawing.Size(1791, 657);
             picCurrentImage.SizeMode = PictureBoxSizeMode.Zoom;
             picCurrentImage.TabIndex = 6;
             picCurrentImage.TabStop = false;
@@ -102,9 +108,10 @@
             // btnPrevious
             // 
             btnPrevious.Enabled = false;
-            btnPrevious.Location = new System.Drawing.Point(3, 3);
+            btnPrevious.Location = new System.Drawing.Point(4, 4);
+            btnPrevious.Margin = new Padding(4);
             btnPrevious.Name = "btnPrevious";
-            btnPrevious.Size = new System.Drawing.Size(150, 46);
+            btnPrevious.Size = new System.Drawing.Size(130, 45);
             btnPrevious.TabIndex = 0;
             btnPrevious.Text = "Back";
             btnPrevious.UseVisualStyleBackColor = true;
@@ -113,9 +120,10 @@
             // btnNext
             // 
             btnNext.Enabled = false;
-            btnNext.Location = new System.Drawing.Point(170, 3);
+            btnNext.Location = new System.Drawing.Point(150, 4);
+            btnNext.Margin = new Padding(4);
             btnNext.Name = "btnNext";
-            btnNext.Size = new System.Drawing.Size(150, 46);
+            btnNext.Size = new System.Drawing.Size(130, 45);
             btnNext.TabIndex = 1;
             btnNext.Text = "Next";
             btnNext.UseVisualStyleBackColor = true;
@@ -125,8 +133,9 @@
             // 
             btnBin.Enabled = false;
             btnBin.Location = new System.Drawing.Point(0, 0);
+            btnBin.Margin = new Padding(4);
             btnBin.Name = "btnBin";
-            btnBin.Size = new System.Drawing.Size(150, 46);
+            btnBin.Size = new System.Drawing.Size(130, 45);
             btnBin.TabIndex = 1;
             btnBin.Text = "Bin";
             btnBin.UseVisualStyleBackColor = true;
@@ -135,9 +144,10 @@
             // btnKeep
             // 
             btnKeep.Enabled = false;
-            btnKeep.Location = new System.Drawing.Point(170, 0);
+            btnKeep.Location = new System.Drawing.Point(150, 0);
+            btnKeep.Margin = new Padding(4);
             btnKeep.Name = "btnKeep";
-            btnKeep.Size = new System.Drawing.Size(150, 46);
+            btnKeep.Size = new System.Drawing.Size(130, 45);
             btnKeep.TabIndex = 2;
             btnKeep.Text = "Keep";
             btnKeep.UseVisualStyleBackColor = true;
@@ -150,10 +160,11 @@
             pnlButtons.Controls.Add(pnlCenterButtons);
             pnlButtons.Controls.Add(btnPrevious);
             pnlButtons.Controls.Add(btnNext);
-            pnlButtons.Location = new System.Drawing.Point(50, 90);
+            pnlButtons.Location = new System.Drawing.Point(16, 68);
+            pnlButtons.Margin = new Padding(4);
             pnlButtons.Name = "pnlButtons";
-            pnlButtons.Padding = new Padding(5);
-            pnlButtons.Size = new System.Drawing.Size(2429, 60);
+            pnlButtons.Padding = new Padding(6);
+            pnlButtons.Size = new System.Drawing.Size(1791, 58);
             pnlButtons.TabIndex = 7;
             // 
             // pnlCenterButtons
@@ -161,18 +172,20 @@
             pnlCenterButtons.Anchor = AnchorStyles.None;
             pnlCenterButtons.Controls.Add(btnBin);
             pnlCenterButtons.Controls.Add(btnKeep);
-            pnlCenterButtons.Location = new System.Drawing.Point(1114, 3);
+            pnlCenterButtons.Location = new System.Drawing.Point(747, 4);
+            pnlCenterButtons.Margin = new Padding(4);
             pnlCenterButtons.Name = "pnlCenterButtons";
-            pnlCenterButtons.Size = new System.Drawing.Size(320, 46);
+            pnlCenterButtons.Size = new System.Drawing.Size(286, 45);
             pnlCenterButtons.TabIndex = 3;
             // 
             // btnOrganiseFiles
             // 
             btnOrganiseFiles.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             btnOrganiseFiles.Enabled = false;
-            btnOrganiseFiles.Location = new System.Drawing.Point(2329, 1320);
+            btnOrganiseFiles.Location = new System.Drawing.Point(1638, 798);
+            btnOrganiseFiles.Margin = new Padding(4);
             btnOrganiseFiles.Name = "btnOrganiseFiles";
-            btnOrganiseFiles.Size = new System.Drawing.Size(150, 46);
+            btnOrganiseFiles.Size = new System.Drawing.Size(169, 45);
             btnOrganiseFiles.TabIndex = 8;
             btnOrganiseFiles.Text = "Organise Files";
             btnOrganiseFiles.UseVisualStyleBackColor = true;
@@ -182,7 +195,8 @@
             // 
             chkCopyOnly.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             chkCopyOnly.AutoSize = true;
-            chkCopyOnly.Location = new System.Drawing.Point(2155, 1329);
+            chkCopyOnly.Location = new System.Drawing.Point(1476, 804);
+            chkCopyOnly.Margin = new Padding(4);
             chkCopyOnly.Name = "chkCopyOnly";
             chkCopyOnly.Size = new System.Drawing.Size(154, 36);
             chkCopyOnly.TabIndex = 9;
@@ -194,18 +208,21 @@
             // 
             chkSortByYear.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             chkSortByYear.AutoSize = true;
-            chkSortByYear.Location = new System.Drawing.Point(1965, 1329);
+            chkSortByYear.Location = new System.Drawing.Point(1294, 804);
+            chkSortByYear.Margin = new Padding(4);
             chkSortByYear.Name = "chkSortByYear";
             chkSortByYear.Size = new System.Drawing.Size(174, 36);
             chkSortByYear.TabIndex = 10;
             chkSortByYear.Text = "Sort by year";
             chkSortByYear.UseVisualStyleBackColor = true;
+            chkSortByYear.CheckedChanged += ChkSortByYear_Changed;
             // 
             // chkKeepParentFolder
             // 
             chkKeepParentFolder.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             chkKeepParentFolder.AutoSize = true;
-            chkKeepParentFolder.Location = new System.Drawing.Point(1701, 1326);
+            chkKeepParentFolder.Location = new System.Drawing.Point(1038, 804);
+            chkKeepParentFolder.Margin = new Padding(4);
             chkKeepParentFolder.Name = "chkKeepParentFolder";
             chkKeepParentFolder.Size = new System.Drawing.Size(246, 36);
             chkKeepParentFolder.TabIndex = 11;
@@ -216,18 +233,20 @@
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(13F, 32F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new System.Drawing.Size(2513, 1438);
+            ClientSize = new System.Drawing.Size(1823, 894);
             Controls.Add(chkKeepParentFolder);
             Controls.Add(chkSortByYear);
             Controls.Add(chkCopyOnly);
             Controls.Add(btnOrganiseFiles);
-            Controls.Add(pnlButtons);
             Controls.Add(picCurrentImage);
             Controls.Add(lblStatus);
             Controls.Add(progressScan);
+            Controls.Add(pnlButtons);
             Controls.Add(btnScanFiles);
             Controls.Add(txtFolderPath);
             Controls.Add(btnBrowseFolder);
+            Margin = new Padding(4);
+            MinimumSize = new System.Drawing.Size(1128, 748);
             Name = "Form1";
             Text = "Media Organiser";
             Load += Form1_Load;
