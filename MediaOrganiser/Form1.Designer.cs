@@ -249,30 +249,30 @@
             // btnRotateLeft
             // 
             btnRotateLeft.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnRotateLeft.Location = new System.Drawing.Point(1508, 144);
+            btnRotateLeft.Font = new Font("Segoe UI", 16F);
+            btnRotateLeft.Location = new System.Drawing.Point(1432, 144);
             btnRotateLeft.Margin = new Padding(4);
             btnRotateLeft.Name = "btnRotateLeft";
-            btnRotateLeft.Size = new System.Drawing.Size(40, 40);
+            btnRotateLeft.Size = new System.Drawing.Size(81, 65);
             btnRotateLeft.TabIndex = 13;
             btnRotateLeft.Text = "↺";
-            btnRotateLeft.Font = new System.Drawing.Font(Font.FontFamily, 16);
             btnRotateLeft.UseVisualStyleBackColor = true;
-            btnRotateLeft.Click += btnRotateLeft_Click;
             btnRotateLeft.Visible = false;
+            btnRotateLeft.Click += btnRotateLeft_Click;
             // 
             // btnRotateRight
             // 
             btnRotateRight.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnRotateRight.Location = new System.Drawing.Point(1552, 144);
+            btnRotateRight.Font = new Font("Segoe UI", 16F);
+            btnRotateRight.Location = new System.Drawing.Point(1521, 144);
             btnRotateRight.Margin = new Padding(4);
             btnRotateRight.Name = "btnRotateRight";
-            btnRotateRight.Size = new System.Drawing.Size(40, 40);
+            btnRotateRight.Size = new System.Drawing.Size(71, 65);
             btnRotateRight.TabIndex = 14;
             btnRotateRight.Text = "↻";
-            btnRotateRight.Font = new System.Drawing.Font(Font.FontFamily, 16);
             btnRotateRight.UseVisualStyleBackColor = true;
-            btnRotateRight.Click += btnRotateRight_Click;
             btnRotateRight.Visible = false;
+            btnRotateRight.Click += btnRotateRight_Click;
             // 
             // Form1
             // 
