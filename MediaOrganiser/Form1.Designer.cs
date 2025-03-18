@@ -28,7 +28,8 @@
             btnBin = new Button();
             btnKeep = new Button();
             pnlButtons = new Panel();
-            pnlCenterButtons = new Panel();
+            pnlCenterControls = new Panel();
+            tbFileName = new TextBox();
             btnOrganiseFiles = new Button();
             chkCopyOnly = new CheckBox();
             chkSortByYear = new CheckBox();
@@ -38,7 +39,7 @@
             btnRotateRight = new Button();
             ((System.ComponentModel.ISupportInitialize)picCurrentImage).BeginInit();
             pnlButtons.SuspendLayout();
-            pnlCenterButtons.SuspendLayout();
+            pnlCenterControls.SuspendLayout();
             pnlOptionsBottom.SuspendLayout();
             SuspendLayout();
             // 
@@ -148,7 +149,7 @@
             // btnKeep
             // 
             btnKeep.Enabled = false;
-            btnKeep.Location = new System.Drawing.Point(134, 0);
+            btnKeep.Location = new System.Drawing.Point(126, 0);
             btnKeep.Margin = new Padding(4);
             btnKeep.Name = "btnKeep";
             btnKeep.Size = new System.Drawing.Size(118, 45);
@@ -161,7 +162,7 @@
             // 
             pnlButtons.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             pnlButtons.BackColor = System.Drawing.Color.FromArgb(240, 242, 245);
-            pnlButtons.Controls.Add(pnlCenterButtons);
+            pnlButtons.Controls.Add(pnlCenterControls);
             pnlButtons.Controls.Add(btnPrevious);
             pnlButtons.Controls.Add(btnNext);
             pnlButtons.Location = new System.Drawing.Point(11, 68);
@@ -171,16 +172,24 @@
             pnlButtons.Size = new System.Drawing.Size(1592, 58);
             pnlButtons.TabIndex = 7;
             // 
-            // pnlCenterButtons
+            // pnlCenterControls
             // 
-            pnlCenterButtons.Anchor = AnchorStyles.None;
-            pnlCenterButtons.Controls.Add(btnBin);
-            pnlCenterButtons.Controls.Add(btnKeep);
-            pnlCenterButtons.Location = new System.Drawing.Point(665, 4);
-            pnlCenterButtons.Margin = new Padding(4);
-            pnlCenterButtons.Name = "pnlCenterButtons";
-            pnlCenterButtons.Size = new System.Drawing.Size(260, 45);
-            pnlCenterButtons.TabIndex = 3;
+            pnlCenterControls.Anchor = AnchorStyles.None;
+            pnlCenterControls.Controls.Add(btnBin);
+            pnlCenterControls.Controls.Add(btnKeep);
+            pnlCenterControls.Controls.Add(tbFileName);
+            pnlCenterControls.Location = new System.Drawing.Point(467, 4);
+            pnlCenterControls.Name = "pnlCenterControls";
+            pnlCenterControls.Size = new System.Drawing.Size(595, 45);
+            pnlCenterControls.TabIndex = 5;
+            // 
+            // tbFileName
+            // 
+            tbFileName.Location = new System.Drawing.Point(250, 3);
+            tbFileName.Name = "tbFileName";
+            tbFileName.Size = new System.Drawing.Size(340, 39);
+            tbFileName.TabIndex = 3;
+            tbFileName.TextChanged += tbFileName_TextChanged;
             // 
             // btnOrganiseFiles
             // 
@@ -296,7 +305,8 @@
             Load += Form1_Load;
             ((System.ComponentModel.ISupportInitialize)picCurrentImage).EndInit();
             pnlButtons.ResumeLayout(false);
-            pnlCenterButtons.ResumeLayout(false);
+            pnlCenterControls.ResumeLayout(false);
+            pnlCenterControls.PerformLayout();
             pnlOptionsBottom.ResumeLayout(false);
             pnlOptionsBottom.PerformLayout();
             ResumeLayout(false);
@@ -313,9 +323,6 @@
         private Label lblStatus;
         private PictureBox picCurrentImage;
         private Panel pnlButtons;
-        private Panel pnlCenterButtons;
-        private Button btnKeep;
-        private Button btnBin;
         private Button btnPrevious;
         private Button btnNext;
         private Button btnOrganiseFiles;
@@ -325,5 +332,9 @@
         private Panel pnlOptionsBottom;
         private Button btnRotateLeft;
         private Button btnRotateRight;
+        private Panel pnlCenterControls;
+        private Button btnBin;
+        private Button btnKeep;
+        private TextBox tbFileName;
     }
 }

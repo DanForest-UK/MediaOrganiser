@@ -169,6 +169,9 @@ namespace MediaOrganiser
         {
             StopMedia();
 
+            // Set visibility of the center controls panel
+            pnlCenterControls.Visible = state.CurrentFile.IsSome;
+
             state.CurrentFile.Match(
                 Some: fileId =>
                 {
@@ -181,6 +184,8 @@ namespace MediaOrganiser
                         FileState.Bin => "Bin",
                         _ => "Undecided"
                     };
+
+                    tbFileName.Text = mediaInfo.FileName.Value;
 
                     var fileSizeText = FormatFileSize(mediaInfo.Size.Value);
                     var fullFileName = $"{mediaInfo.FileName.Value}.{mediaInfo.Extension.Value.TrimStart('.')}";
@@ -203,7 +208,12 @@ namespace MediaOrganiser
                         DisplayDocument(mediaInfo);
 
                 },
-                None: () => UpdateStatus("No files selected"));
+                None: () =>
+                {
+                    UpdateStatus("No files selected");
+                    // Hide the center controls panel when no file is selected
+                    pnlCenterControls.Visible = false;
+                });
         }
 
         /// <summary>
@@ -829,5 +839,8 @@ namespace MediaOrganiser
             else
                 MessageBox.Show(this, message, caption, buttons, icon);
         }
+
+        private void tbFileName_TextChanged(object sender, EventArgs e) =>
+            ObservableState.UpdateFilename(tbFileName.Text);
     }
 }

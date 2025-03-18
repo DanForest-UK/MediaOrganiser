@@ -74,7 +74,14 @@ namespace SortPhotos.Logic
                 (from targetDir in GetTargetDirectory(file, destinationBasePath, FolderName(file.Category), sortByYear, keepParentFolder)
                  from targetPath in IO.lift(() =>
                  {
+                     int counter = 1;
+                   
                      var targetPath = Path.Combine(targetDir, file.FileName.Value + file.Extension.Value);
+
+                     while (File.Exists(targetPath))
+                     {
+                         targetPath = Path.Combine(targetDir, file.FileName.Value + counter++ + file.Extension.Value);
+                     }
 
                      // If rotation is applied and file is an image, save with rotation
                      if (file.Rotation != Rotation.None && file.Category == FileCategory.Image)
