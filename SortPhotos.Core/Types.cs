@@ -59,7 +59,16 @@ namespace SortPhotos.Core
             Size Size,
             Date Date,
             FileCategory Category,
-            FileState State);
+            FileState State,
+            Rotation Rotation = Rotation.None);
+
+        public enum Rotation
+        {
+            None = 0,
+            Rotate90 = 90,
+            Rotate180 = 180,
+            Rotate270 = 270
+        }
 
         public record FileResponse(Seq<UserError> UserErrors, Seq<MediaInfo> Files);
         public record OrganiseResponse(Seq<UserError> UserErrors, bool success);

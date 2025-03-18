@@ -117,6 +117,41 @@ namespace MusicTools.Logic
             });
         }
 
+        /// <summary>
+        /// Rotates the current image
+        /// </summary>
+        public static void RotateCurrentImage(Rotation direction)
+        {
+            var current = stateAtom.Value;
+            current.CurrentFile.IfSome(currentId =>
+            {
+                // Get the file and update its rotation
+                if (current.Files.ContainsKey(currentId))
+                {
+                    var file = current.Files[currentId];
+
+                    // Calculate new rotation
+                    Rotation newRotation = file.Rotation;
+                    if (direction == Rotation.Rotate90)
+                    {
+                        newRotation = (Rotation)(((int)file.Rotation + 90) % 360);
+                    }
+                    else if (direction == Rotation.Rotate270)
+                    {
+                        newRotation = (Rotation)(((int)file.Rotation + 270) % 360);
+                    }
+
+                    var updatedFile = file with { Rotation = newRotation };
+
+                    // Update the state atomically
+                    Update(current with
+                    {
+                        Files = current.Files.AddOrUpdate(currentId, updatedFile)
+                    });
+                }
+            });
+        }
+
 
         /// <summary>
         /// Move to the previous file in the collection

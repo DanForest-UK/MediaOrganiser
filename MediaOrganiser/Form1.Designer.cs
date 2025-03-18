@@ -34,6 +34,8 @@
             chkSortByYear = new CheckBox();
             chkKeepParentFolder = new CheckBox();
             pnlOptionsBottom = new Panel();
+            btnRotateLeft = new Button();
+            btnRotateRight = new Button();
             ((System.ComponentModel.ISupportInitialize)picCurrentImage).BeginInit();
             pnlButtons.SuspendLayout();
             pnlCenterButtons.SuspendLayout();
@@ -244,11 +246,41 @@
             pnlOptionsBottom.Size = new System.Drawing.Size(756, 45);
             pnlOptionsBottom.TabIndex = 12;
             // 
+            // btnRotateLeft
+            // 
+            btnRotateLeft.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnRotateLeft.Location = new System.Drawing.Point(1508, 144);
+            btnRotateLeft.Margin = new Padding(4);
+            btnRotateLeft.Name = "btnRotateLeft";
+            btnRotateLeft.Size = new System.Drawing.Size(40, 40);
+            btnRotateLeft.TabIndex = 13;
+            btnRotateLeft.Text = "↺";
+            btnRotateLeft.Font = new System.Drawing.Font(Font.FontFamily, 16);
+            btnRotateLeft.UseVisualStyleBackColor = true;
+            btnRotateLeft.Click += btnRotateLeft_Click;
+            btnRotateLeft.Visible = false;
+            // 
+            // btnRotateRight
+            // 
+            btnRotateRight.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnRotateRight.Location = new System.Drawing.Point(1552, 144);
+            btnRotateRight.Margin = new Padding(4);
+            btnRotateRight.Name = "btnRotateRight";
+            btnRotateRight.Size = new System.Drawing.Size(40, 40);
+            btnRotateRight.TabIndex = 14;
+            btnRotateRight.Text = "↻";
+            btnRotateRight.Font = new System.Drawing.Font(Font.FontFamily, 16);
+            btnRotateRight.UseVisualStyleBackColor = true;
+            btnRotateRight.Click += btnRotateRight_Click;
+            btnRotateRight.Visible = false;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(13F, 32F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new System.Drawing.Size(1605, 881);
+            Controls.Add(btnRotateLeft);
+            Controls.Add(btnRotateRight);
             Controls.Add(pnlOptionsBottom);
             Controls.Add(picCurrentImage);
             Controls.Add(lblStatus);
@@ -291,5 +323,7 @@
         private CheckBox chkSortByYear;
         private CheckBox chkKeepParentFolder;
         private Panel pnlOptionsBottom;
+        private Button btnRotateLeft;
+        private Button btnRotateRight;
     }
 }

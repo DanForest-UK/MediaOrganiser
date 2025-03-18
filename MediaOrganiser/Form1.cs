@@ -213,6 +213,9 @@ namespace MediaOrganiser
         {
             try
             {
+                // todo can all this visiblity be driven from the main state
+                btnRotateLeft.Visible = false;
+                btnRotateRight.Visible = false;
                 if (videoPlayer != null) videoPlayer.Visible = false;
                 picCurrentImage.Image = null;
 
@@ -246,6 +249,12 @@ namespace MediaOrganiser
                 ShowErrorWithOpenFolderButton(mediaInfo);
             }
         }
+
+        void btnRotateLeft_Click(object sender, EventArgs e) =>
+            ObservableState.RotateCurrentImage(Rotation.Rotate270); // Counterclockwise
+
+        void btnRotateRight_Click(object sender, EventArgs e) =>
+            ObservableState.RotateCurrentImage(Rotation.Rotate90); // Clockwise
 
         /// <summary>
         /// Shows error message with button to open file's directory
@@ -329,6 +338,9 @@ namespace MediaOrganiser
         {
             try
             {
+                // todo can all this visiblity be driven from the main state
+                btnRotateLeft.Visible = true;
+                btnRotateRight.Visible = true;
                 if (videoPlayer != null) videoPlayer.Visible = false;
                 if (documentViewer != null) documentViewer.Visible = false;
                 if (openFolderPanel != null) openFolderPanel.Visible = false;
@@ -340,8 +352,34 @@ namespace MediaOrganiser
                     currentImage = null;
                 }
 
+                // Load the original image
                 currentImage = System.Drawing.Image.FromFile(mediaInfo.FullPath.Value);
+
+                // Apply rotation if needed
+                if (mediaInfo.Rotation != Rotation.None)
+                {
+                    RotateFlipType rotateFlip = mediaInfo.Rotation switch
+                    {
+                        Rotation.Rotate90 => RotateFlipType.Rotate90FlipNone,
+                        Rotation.Rotate180 => RotateFlipType.Rotate180FlipNone,
+                        Rotation.Rotate270 => RotateFlipType.Rotate270FlipNone,
+                        _ => RotateFlipType.RotateNoneFlipNone
+                    };
+
+                    // Create a new bitmap with the rotation applied
+                    System.Drawing.Bitmap rotatedImage = new System.Drawing.Bitmap(currentImage);
+                    rotatedImage.RotateFlip(rotateFlip);
+
+                    // Dispose the original and use the rotated one
+                    currentImage.Dispose();
+                    currentImage = rotatedImage;
+                }
+
                 picCurrentImage.Image = currentImage;
+
+                // Show/hide rotation buttons for images only
+                btnRotateLeft.Visible = true;
+                btnRotateRight.Visible = true;
             }
             catch (Exception ex)
             {
@@ -357,6 +395,9 @@ namespace MediaOrganiser
         {
             try
             {
+                // todo can all this visiblity be driven from the main state
+                btnRotateLeft.Visible = false;
+                btnRotateRight.Visible = false;
                 picCurrentImage.Image = null;
                 if (documentViewer != null) documentViewer.Visible = false;
                 if (openFolderPanel != null) openFolderPanel.Visible = false;

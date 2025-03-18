@@ -13,6 +13,7 @@ using SortPhotos.Core;
 using LanguageExt.Traits;
 using static SortPhotos.Core.UserErrors;
 using static SortPhotos.Core.Extensions;
+using System.Drawing;
 
 namespace SortPhotos.Logic
 {
@@ -74,13 +75,47 @@ namespace SortPhotos.Logic
                  from targetPath in IO.lift(() =>
                  {
                      var targetPath = Path.Combine(targetDir, file.FileName.Value + file.Extension.Value);
-                     if (copyOnly.Value)
+
+                     // If rotation is applied and file is an image, save with rotation
+                     if (file.Rotation != Rotation.None && file.Category == FileCategory.Image)
                      {
-                         File.Copy(file.FullPath.Value, targetPath, true);
+                         // Load the image, apply rotation and save to destination
+                         using (var image = Image.FromFile(file.FullPath.Value))
+                         {
+                             // Apply rotation
+                             RotateFlipType rotateFlip = file.Rotation switch
+                             {
+                                 Rotation.Rotate90 => RotateFlipType.Rotate90FlipNone,
+                                 Rotation.Rotate180 => RotateFlipType.Rotate180FlipNone,
+                                 Rotation.Rotate270 => RotateFlipType.Rotate270FlipNone,
+                                 _ => RotateFlipType.RotateNoneFlipNone
+                             };
+
+                             // Create a new bitmap with rotation applied
+                             using (var rotatedImage = new System.Drawing.Bitmap(image))
+                             {
+                                 rotatedImage.RotateFlip(rotateFlip);
+                                 rotatedImage.Save(targetPath);
+                             }
+                         }
+
+                         // If we're not in copy mode, delete the original
+                         if (!copyOnly.Value)
+                         {
+                             File.Delete(file.FullPath.Value);
+                         }
                      }
                      else
                      {
-                         File.Move(file.FullPath.Value, targetPath, true);
+                         // Normal copy/move for non-rotated images or non-image files
+                         if (copyOnly.Value)
+                         {
+                             File.Copy(file.FullPath.Value, targetPath, true);
+                         }
+                         else
+                         {
+                             File.Move(file.FullPath.Value, targetPath, true);
+                         }
                      }
                  })
                  select unit)
