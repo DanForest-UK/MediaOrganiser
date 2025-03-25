@@ -8,17 +8,26 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using static SortPhotos.Core.Types;
-using SortPhotos.Core;
+using static MediaOrganiser.Core.Types;
+using MediaOrganiser.Core;
 using LanguageExt.Traits;
-using static SortPhotos.Core.UserErrors;
-using static SortPhotos.Core.Extensions;
+using static MediaOrganiser.Core.Extensions;
 using System.Drawing;
+using static MediaOrganiser.Core.AppErrors;
 
-namespace SortPhotos.Logic
+namespace MediaOrganiser.Logic
 {
     public static class OrganiseFiles
     {
+        /// <summary>
+        /// Organises files into folders moving or copying as per settings
+        /// </summary>
+        /// <param name="files"></param>
+        /// <param name="destinationBasePath">Where the files will be organised to</param>
+        /// <param name="copyOnly">Do not delete original files</param>
+        /// <param name="sortByYear">Sort files into a folder by year</param>
+        /// <param name="keepParentFolder">Recreate top level of original directory structure</param>
+        /// <returns></returns>
         public static IO<Seq<UserError>> DoOrganiseFiles(
             Seq<MediaInfo> files,
             string destinationBasePath,
@@ -45,16 +54,24 @@ namespace SortPhotos.Logic
                 from result in keep.ExtractUserErrors()
                 select result.UserErrors;
 
+        /// <summary>
+        /// Delete files tagged for binning
+        /// </summary>
+        /// <param name="files"></param>
+        /// <returns></returns>
         static IO<Seq<UserError>> DeleteFilesToBin(Seq<MediaInfo> files) =>
             from bin in IO.pure(files.Where(f => f.State == FileState.Bin)
                 .Map(f => DeleteFile(f.FullPath.Value)))
             from result in bin.ExtractUserErrors()
             select result.UserErrors;
 
+        /// <summary>
+        /// Delete a single file
+        /// </summary>
         static IO<Unit> DeleteFile(string path) =>
             IO.lift(() => File.Delete(path))
             .HandleUnauthorised(path)
-            | @catch(err => IO.fail<Unit>(AppErrors.UnableToMove(err.Message, err)));
+            | @catch(err => IO.fail<Unit>(AppErrors.UnableToDelete(path, err)));
 
         static string FolderName(FileCategory category) =>
             category switch
@@ -65,6 +82,9 @@ namespace SortPhotos.Logic
                 _ => "Other"
             };
 
+        /// <summary>
+        /// Move or copy a single file
+        /// </summary>
         static IO<Unit> MoveFile(
             MediaInfo file,
             string destinationBasePath,
@@ -72,64 +92,48 @@ namespace SortPhotos.Logic
             SortByYear sortByYear,
             KeepParentFolder keepParentFolder) =>
                 (from targetDir in GetTargetDirectory(file, destinationBasePath, FolderName(file.Category), sortByYear, keepParentFolder)
-                 from targetPath in IO.lift(() =>
+                 from targetPath in GetUniquePath(file, targetDir)
+                 from shouldRotate in IO.pure(
+                       file.Rotation != Rotation.None &&
+                       file.Category == FileCategory.Image)
+                 from _ in shouldRotate
+                    ? Runtime.RotateImage(file, targetPath)
+                      | @catch(err => // If we fail to rotate, we do a normal move but still log an error
+                            from _1 in CopyFile(file.FullPath.Value, targetPath)
+                            from _2 in IO.fail<Unit>(UnableToRotate(file.FullPath.Value, err))
+                            select unit)
+                     : CopyFile(file.FullPath.Value, targetPath)
+                 from _1 in IO.lift(() =>
                  {
-                     int counter = 1;
-                   
-                     var targetPath = Path.Combine(targetDir, file.FileName.Value + file.Extension.Value);
-
-                     while (File.Exists(targetPath))
-                     {
-                         targetPath = Path.Combine(targetDir, file.FileName.Value + counter++ + file.Extension.Value);
-                     }
-
-                     // If rotation is applied and file is an image, save with rotation
-                     if (file.Rotation != Rotation.None && file.Category == FileCategory.Image)
-                     {
-                         // Load the image, apply rotation and save to destination
-                         using (var image = Image.FromFile(file.FullPath.Value))
-                         {
-                             // Apply rotation
-                             RotateFlipType rotateFlip = file.Rotation switch
-                             {
-                                 Rotation.Rotate90 => RotateFlipType.Rotate90FlipNone,
-                                 Rotation.Rotate180 => RotateFlipType.Rotate180FlipNone,
-                                 Rotation.Rotate270 => RotateFlipType.Rotate270FlipNone,
-                                 _ => RotateFlipType.RotateNoneFlipNone
-                             };
-
-                             // Create a new bitmap with rotation applied
-                             using (var rotatedImage = new System.Drawing.Bitmap(image))
-                             {
-                                 rotatedImage.RotateFlip(rotateFlip);
-                                 rotatedImage.Save(targetPath);
-                             }
-                         }
-
-                         // If we're not in copy mode, delete the original
-                         if (!copyOnly.Value)
-                         {
-                             File.Delete(file.FullPath.Value);
-                         }
-                     }
-                     else
-                     {
-                         // Normal copy/move for non-rotated images or non-image files
-                         if (copyOnly.Value)
-                         {
-                             File.Copy(file.FullPath.Value, targetPath, true);
-                         }
-                         else
-                         {
-                             File.Move(file.FullPath.Value, targetPath, true);
-                         }
-                     }
-                 })
+                     if (!copyOnly.Value)                    
+                         File.Delete(file.FullPath.Value);                     
+                 })                
                  select unit)
                 .HandleUnauthorised(file.FullPath.Value)
                 .HandleFileNotFound(file.FullPath.Value)
                 .HandleDirectoryNotFound(file.FullPath.Value)
-                | @catch(err => IO.fail<Unit>(AppErrors.UnableToMove(err.Message, err)));
+                | @catch(err => IO.fail<Unit>(UnableToMove(file.FullPath.Value, err)));
+
+        /// <summary>
+        /// Normal copy for files that do not need rotating
+        /// </summary>
+        static IO<Unit> CopyFile(string path, string targetPath) =>
+            IO.lift(() => File.Copy(path, targetPath, true));
+ 
+        // Make sure no filename clashes
+        static IO<string> GetUniquePath(MediaInfo file, string targetDir) =>
+            IO.lift(() =>
+            {
+                var counter = 1;
+
+                var targetPath = Path.Combine(targetDir, file.FileName.Value + file.Extension.Value);
+
+                while (File.Exists(targetPath))
+                {
+                    targetPath = Path.Combine(targetDir, file.FileName.Value + counter++ + file.Extension.Value);
+                }
+                return targetDir;
+            });
 
         /// <summary>
         /// Determines and creates the target directory based on configuration and file details
@@ -161,7 +165,7 @@ namespace SortPhotos.Logic
             })
             .HandleUnauthorised(destinationBasePath)
             .HandleDirectoryNotFound(destinationBasePath)
-            | @catch(err => IO.fail<string>(AppErrors.UnableToCreateDirectory(destinationBasePath, err.Message, err)));
+            | @catch(err => IO.fail<string>(UnableToCreateDirectory(destinationBasePath, err)));
         }
     }
 }

@@ -1,3 +1,7 @@
+using LanguageExt;
+using MediaOrganiser.Logic;
+using static MediaOrganiser.Core.Types;
+
 namespace MediaOrganiser
 {
     internal static class Program
@@ -19,6 +23,9 @@ namespace MediaOrganiser
             // Apply modern look and feel
             ApplyModernStyles();
 
+            // Setup dependency for rotating image in a windows app
+            Runtime.RotateImage = Windows.RotateImage;
+
             Application.Run(new Form1());
         }
 
@@ -32,6 +39,6 @@ namespace MediaOrganiser
 
             // Set the application's default font
             Application.SetDefaultFont(ThemeManager.DefaultFont);
-        }
+        }       
     }
 }

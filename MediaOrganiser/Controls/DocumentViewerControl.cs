@@ -9,7 +9,7 @@ using IronPdf;
 using System.Collections.Generic;
 using System.Drawing;
 using Image = System.Drawing.Image;
-using static SortPhotos.Core.Types;
+using static MediaOrganiser.Core.Types;
 using Color = System.Drawing.Color;
 using Point = System.Drawing.Point;
 using Size = System.Drawing.Size;

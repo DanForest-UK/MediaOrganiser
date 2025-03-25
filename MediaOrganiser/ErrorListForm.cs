@@ -1,7 +1,8 @@
-﻿using System;
+﻿using LanguageExt;
+using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
-using static SortPhotos.Core.UserErrors;
+using static MediaOrganiser.Core.AppErrors;
 
 namespace MediaOrganiser
 {
@@ -15,7 +16,7 @@ namespace MediaOrganiser
         private Label lblTitle;
         private Panel pnlContent;
 
-        public ErrorListForm(string title, IEnumerable<UserError> errors)
+        public ErrorListForm(string title, Seq<UserError> errors)
         {
             InitializeComponents();
 
@@ -103,7 +104,7 @@ namespace MediaOrganiser
         /// <summary>
         /// Shows the error list form as a dialog
         /// </summary>
-        public static void ShowErrors(Form owner, string title, IEnumerable<UserError> errors)
+        public static void ShowErrors(Form owner, string title, Seq<UserError> errors)
         {
             using var form = new ErrorListForm(title, errors);
             form.ShowDialog(owner);

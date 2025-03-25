@@ -7,8 +7,8 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Collections.Concurrent;
-using static SortPhotos.Core.Types;
-using SortPhotos.Core;
+using static MediaOrganiser.Core.Types;
+using MediaOrganiser.Core;
 using LanguageExt.Core;
 
 namespace MusicTools.Logic

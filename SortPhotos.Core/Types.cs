@@ -1,12 +1,13 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Security.Cryptography.X509Certificates;
 using LanguageExt;
 using LanguageExt.ClassInstances;
 using LanguageExt.Common;
 using static LanguageExt.Prelude;
-using static SortPhotos.Core.UserErrors;
+using static MediaOrganiser.Core.AppErrors;
 
-namespace SortPhotos.Core
+namespace MediaOrganiser.Core
 {
     public static class Types
     {
@@ -26,6 +27,7 @@ namespace SortPhotos.Core
                 other is null ? 1 : Value.CompareTo(other.Value);
         }
 
+        // New types for better compile time safety
         public record FileName(string Value);
         public record FullPath(string Value);
         public record Extension(string Value);
@@ -76,6 +78,9 @@ namespace SortPhotos.Core
 
     public static class AppErrors
     {
+        // Type to distinguish expected errors from unexpected errors
+        public record UserError(string message);
+
         public const int DisplayErrorCode = 303;
 
         public static Error DisplayError(string message, Error inner) =>
@@ -105,24 +110,30 @@ namespace SortPhotos.Core
         public static Error ReadFileError(string filename, Error inner) =>
             DisplayError($"Error reading file: {filename}", inner);
 
-        public static Error UnableToMove(string message, Error inner) =>
-            DisplayError($"Unable to move/copy file: {message}", inner);
+        public static Error UnableToMove(string path, Error inner) =>
+            DisplayError($"Unable to move/copy file: {path}", inner);
 
-        public static Error UnableToDelete(string fileName, string message, Error inner) =>
-            DisplayError($"Unable to delete file {fileName}: {message}", inner);
+        public static Error UnableToDelete(string fileName, Error inner) =>
+            DisplayError($"Unable to delete file {fileName}", inner);
 
-        public static Error UnableToCreateDirectory(string directory, string message, Error inner) =>
-           DisplayError($"Unable to create directory {directory}: {message}", inner);
+        public static Error UnableToRotate(string fileName, Error inner) =>
+           DisplayError($"Unable to rotate file {fileName}, it was copied in its original orientation", inner);
+
+        public static Error UnableToCreateDirectory(string directory, Error inner) =>
+           DisplayError($"Unable to create directory {directory}", inner);
 
         public static (Seq<UserError> User, Seq<Error> Unexpected) SeparateUserErrors(this Seq<Error> allErrors)
         {
+            // Log errors before converting to user safe errors
+            allErrors.Iter(e =>
+            {
+                Debug.WriteLine(e.Message);
+                e.Exception.IfSome(ex => Debug.Write(ex));
+                e.Inner.IfSome(inner => Debug.Write(inner.Exception));
+            });
+
             var separated = allErrors.Separate(err => err.Code == DisplayErrorCode);
             return (User: separated.Matched.Select(item => new UserError(item.Message)), Unexpected: separated.Unmatched);
         }
-    }
-
-    public static class UserErrors
-    {
-        public record UserError(string message);
     }
 }

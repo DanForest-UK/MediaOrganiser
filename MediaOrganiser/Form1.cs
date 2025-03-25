@@ -2,11 +2,11 @@ using LanguageExt;
 using LanguageExt.Common;
 using MediaOrganiser.Services;
 using MusicTools.Logic;
-using SortPhotos.Core;
+using MediaOrganiser.Core;
 using System.Diagnostics;
 using System.IO;
 using System.Windows.Forms;
-using static SortPhotos.Core.Types;
+using static MediaOrganiser.Core.Types;
 using static LanguageExt.Prelude;
 
 namespace MediaOrganiser
@@ -159,7 +159,7 @@ namespace MediaOrganiser
             UpdateMediaDisplay(state);
 
             if (!state.WorkInProgress)
-                StateSerializer.SaveState(state);
+                StateSerialiser.SaveState(state);
         }
 
         /// <summary>
@@ -471,7 +471,7 @@ namespace MediaOrganiser
         {
             Task.Run(() =>
             {
-                var savedState = StateSerializer.LoadState();
+                var savedState = StateSerialiser.LoadState();
 
                 if (savedState.Exists(s => s.Files.Keys.Any()))
                 {
@@ -494,7 +494,7 @@ namespace MediaOrganiser
                             }
                             else
                             {
-                                StateSerializer.DeleteState();
+                                StateSerialiser.DeleteState();
                             }
                         });
                     });
@@ -646,7 +646,7 @@ namespace MediaOrganiser
                 if (confirmResult != DialogResult.Yes)
                     return;
             }
-            StateSerializer.DeleteState();
+            StateSerialiser.DeleteState();
 
             await Task.Run(() =>
                 ObservableState.Current.CurrentFolder.Match(
@@ -794,7 +794,7 @@ namespace MediaOrganiser
             {
                 ObservableState.SetWorkInProgress(false);
                 ObservableState.ClearFiles();
-                StateSerializer.DeleteState();
+                StateSerialiser.DeleteState();
                 ShowMessageBox("Organise complete!", "Finished", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }

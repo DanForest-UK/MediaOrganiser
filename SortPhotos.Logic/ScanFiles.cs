@@ -8,12 +8,11 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using static SortPhotos.Core.Types;
-using SortPhotos.Core;
+using static MediaOrganiser.Core.Types;
+using MediaOrganiser.Core;
 using LanguageExt.Traits;
-using static SortPhotos.Core.UserErrors;
 
-namespace SortPhotos.Logic
+namespace MediaOrganiser.Logic
 {
     public static class ScanFiles
     {

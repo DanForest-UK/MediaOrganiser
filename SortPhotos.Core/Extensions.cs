@@ -5,12 +5,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using static LanguageExt.Prelude;
-using static SortPhotos.Core.Types;
+using static MediaOrganiser.Core.Types;
 using LanguageExt.Traits;
-using static SortPhotos.Core.UserErrors;
 using System.IO;
+using static MediaOrganiser.Core.AppErrors;
 
-namespace SortPhotos.Core
+namespace MediaOrganiser.Core
 {
     public static class Extensions
     {

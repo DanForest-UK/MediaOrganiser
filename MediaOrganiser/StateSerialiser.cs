@@ -1,25 +1,26 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using LanguageExt;
-using static SortPhotos.Core.Types;
+using static MediaOrganiser.Core.Types;
 using static LanguageExt.Prelude;
 using System.IO;
 using System.Runtime.CompilerServices;
-using SortPhotos.Core;
+using MediaOrganiser.Core;
 using LanguageExt.Core;
+using System.Diagnostics;
 
 namespace MediaOrganiser
 {
     /// <summary>
     /// Handles serialization and deserialization of application state
     /// </summary>
-    public static class StateSerializer
+    public static class StateSerialiser
     {
 
         /// <summary>
         /// A serializable version of the application state
         /// </summary>
-        public record SerializableAppModel(
+        public record SerialisableAppModel(
             MediaInfo[] Files,
             int CurrentFileId,
             string CurrentFolder,
@@ -29,7 +30,7 @@ namespace MediaOrganiser
 
         const string StateFileName = "appstate.json";
 
-        private static readonly JsonSerializerOptions SerializerOptions = new()
+        static readonly JsonSerializerOptions SerializerOptions = new()
         {
             WriteIndented = true,
         };
@@ -37,12 +38,9 @@ namespace MediaOrganiser
         /// <summary>
         /// Gets the full path to the state file in the application directory
         /// </summary>
-        public static string GetStateFilePath()
-        {
-            var appDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            return Path.Combine(appDirectory, StateFileName);
-        }
-
+        public static string GetStateFilePath() =>
+            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, StateFileName);
+       
         /// <summary>
         /// Serializes the current application state to disk
         /// </summary>
@@ -56,13 +54,11 @@ namespace MediaOrganiser
                     var serializableState = state.ToSerializableAppModel();
                     var json = JsonSerializer.Serialize(serializableState, SerializerOptions);
                     File.WriteAllText(GetStateFilePath(), json);
-
-                    System.Diagnostics.Debug.WriteLine("State saved successfully");
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error saving state: {ex.Message}");
+                Debug.WriteLine($"Error saving state: {ex.Message}");
             }
         }
 
@@ -70,39 +66,32 @@ namespace MediaOrganiser
         /// <summary>
         /// Attempts to load saved state from disk
         /// </summary>
-        public static Option<AppModel> LoadState()
-        {
-            try
+        public static Option<AppModel> LoadState() =>
+            Try.lift(() =>
             {
                 var statePath = GetStateFilePath();
                 if (!File.Exists(statePath))
                     return None;
 
-                var json = File.ReadAllText(statePath);
-                var serializableState = JsonSerializer.Deserialize<SerializableAppModel>(json, SerializerOptions);
+                return Optional(JsonSerializer.Deserialize<SerialisableAppModel>(File.ReadAllText(statePath), SerializerOptions))
+                    .Map(state =>
+                    {
+                        // Filter out any file we can't find or have an error trying to find
+                        var presentFiles = state.Files.Where(f =>
+                            Try.lift(() => File.Exists(f.FullPath.Value))
+                                .IfFail(err => false)).ToArray();
 
-                if (serializableState == null)
-                    return None;
-
-                // Filter out any file we can't find or have an error trying to find
-                var presentFiles = serializableState.Files.Where(f =>
-                    Try.lift(() => File.Exists(f.FullPath.Value))
-                        .IfFail(err => false)).ToArray();
-
-                if (!presentFiles.Any())
-                    return None;
-
-                return (serializableState with { Files = presentFiles }).ToAppModel();
-            }
-            catch (Exception ex)
+                        return (state with { Files = presentFiles }).ToAppModel();
+                    })
+                    .Where(s => s.Files.Values.Any());
+            }).IfFail(ex =>
             {
-                System.Diagnostics.Debug.WriteLine($"Error loading state: {ex.Message}");
+                Debug.WriteLine($"Error loading state: {ex.Message}");
                 return None;
-            }
-        }
+            });       
 
-        public static SerializableAppModel ToSerializableAppModel(this AppModel model) =>
-            new SerializableAppModel(
+        public static SerialisableAppModel ToSerializableAppModel(this AppModel model) =>
+            new SerialisableAppModel(
                 Files: model.Files.Values.ToArray(),
                 CurrentFileId: model.CurrentFile.Map(v => v.Value).IfNone(0),
                 CurrentFolder: model.CurrentFolder.Map(v => v.Value).IfNone(""),
@@ -110,7 +99,7 @@ namespace MediaOrganiser
                 SortByYear: model.SortByYear.Value,
                 KeepParentFolder: model.KeepParentFolder.Value);
 
-        public static AppModel ToAppModel(this SerializableAppModel model) =>
+        public static AppModel ToAppModel(this SerialisableAppModel model) =>
             new AppModel(
                 Files: toMap(model.Files.Select(m => (m.Id, m))),
                 WorkInProgress: false,
@@ -128,21 +117,17 @@ namespace MediaOrganiser
         /// <summary>
         /// Deletes the saved state file if it exists
         /// </summary>
-        public static void DeleteState()
-        {
-            try
+        public static void DeleteState() =>
+            Try.lift(() =>
             {
                 var statePath = GetStateFilePath();
-                if (File.Exists(statePath))
-                {
+                if (File.Exists(statePath))                
                     File.Delete(statePath);
-                    System.Diagnostics.Debug.WriteLine("State file deleted");
-                }
-            }
-            catch (Exception ex)
+                
+            }).IfFail(ex =>
             {
-                System.Diagnostics.Debug.WriteLine($"Error deleting state file: {ex.Message}");
-            }
-        }
+                Debug.WriteLine($"Error deleting state file: {ex.Message}");
+                return unit;
+            });
     }
 }
