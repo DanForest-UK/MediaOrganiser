@@ -76,9 +76,17 @@ namespace MediaOrganiser
                         // Filter out any file we can't find or have an error trying to find
                         var presentFiles = state.Files.Where(f =>
                             Try.lift(() => File.Exists(f.FullPath.Value))
-                                .IfFail(err => false)).ToArray();
+                                .IfFail(err => false))
+                                .Select((s, i) => s with { Id = new FileId(i + 1) })
+                                .ToArray(); // reset index of files
 
-                        return (state with { Files = presentFiles }).ToAppModel();
+                        // If any files are missing since last session we start at the beginning again
+                        var currentFile = presentFiles.Count() == state.Files.Count() &&
+                                          state.CurrentFileId < presentFiles.Count()
+                            ? state.CurrentFileId
+                            : 1;
+
+                        return (state with { Files = presentFiles, CurrentFileId = currentFile }).ToAppModel();
                     })
                     .Where(s => s.Files.Values.Any());
             }).IfFail(ex =>
