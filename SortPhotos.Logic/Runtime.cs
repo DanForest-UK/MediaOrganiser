@@ -13,6 +13,6 @@ namespace MediaOrganiser.Logic
     /// </summary>
     public static class Runtime
     {
-        public static Func<MediaInfo, string, IO<Unit>> RotateImage = (_, _) => throw new NotImplementedException();
+        public static Func<MediaInfo, string, IO<Unit>> RotateImageAndSave = (_, _) => throw new NotImplementedException();
     }
 }

@@ -8,24 +8,16 @@ using System.IO;
 using System.Windows.Forms;
 using static MediaOrganiser.Core.Types;
 using static LanguageExt.Prelude;
+using D = System.Drawing;
+using System.Xml;
 
 namespace MediaOrganiser
 {
     public partial class Form1 : Form
     {
         readonly MediaService mediaService;
-        System.Drawing.Image? currentImage;
-
-        // Media player controls
-        VideoPlayerControl? videoPlayer;
-        DocumentViewerControl? documentViewer;
-        Panel? openFolderPanel;
-        Button? openFolderButton;
-
-        readonly string settingsFilePath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "MediaOrganiser",
-            "settings.json");
+        Option<VideoPlayerControl> videoPlayer;
+        Option<DocumentViewerControl> documentViewer;
 
         public Form1()
         {
@@ -71,6 +63,11 @@ namespace MediaOrganiser
             CheckSavedStateAsync();
         }
 
+        readonly string settingsFilePath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "MediaOrganiser",
+            "settings.json");
+
         /// <summary>
         /// Initializes the video player control
         /// </summary>
@@ -78,15 +75,15 @@ namespace MediaOrganiser
         {
             try
             {
-                videoPlayer = new VideoPlayerControl();
-                videoPlayer.Dock = DockStyle.Fill;
-                videoPlayer.Visible = false;
-                picCurrentImage.Controls.Add(videoPlayer);
+                var vp = new VideoPlayerControl();
+                vp.Dock = DockStyle.Fill;
+                vp.Visible = false;
+                picCurrentImage.Controls.Add(vp);
+                videoPlayer = vp;
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error initializing video player: {ex.Message}");
-                UpdateStatus("Error: Video player could not be initialized");
+                UpdateStatus("Error: Video player could not be initialized", ex);
             }
         }
 
@@ -97,15 +94,15 @@ namespace MediaOrganiser
         {
             try
             {
-                documentViewer = new DocumentViewerControl();
-                documentViewer.Dock = DockStyle.Fill;
-                documentViewer.Visible = false;
-                picCurrentImage.Controls.Add(documentViewer);
+                var dv = new DocumentViewerControl();
+                dv.Dock = DockStyle.Fill;
+                dv.Visible = false;
+                picCurrentImage.Controls.Add(dv);
+                documentViewer = dv;
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error initializing document viewer: {ex.Message}");
-                UpdateStatus("Error: Document viewer could not be initialized");
+                UpdateStatus("Error: Document viewer could not be initialized", ex);
             }
         }
 
@@ -147,6 +144,7 @@ namespace MediaOrganiser
                        f.State == FileState.Bin
                  select unit).Any();
 
+            // todo is this used?
             progressScan.Style = state.WorkInProgress ? ProgressBarStyle.Marquee : ProgressBarStyle.Blocks;
             progressScan.MarqueeAnimationSpeed = state.WorkInProgress ? 30 : 0;
             if (!state.WorkInProgress) progressScan.Value = 0;
@@ -167,7 +165,7 @@ namespace MediaOrganiser
         /// </summary>
         void UpdateMediaDisplay(AppModel state)
         {
-            StopMedia();
+            DisposeMedia();
 
             // Set visibility of the center controls panel
             pnlCenterControls.Visible = state.CurrentFile.IsSome;
@@ -196,7 +194,7 @@ namespace MediaOrganiser
 
                     var placeText = $"{state.CurrentFile.Map(v => v.Value).IfNone(0)} of {state.Files.Count()} files: ";
 
-                    UpdateStatus($"{placeText}{fullFileName} ({fileSizeText}) - {fileStatus}{lastFileText}");
+                    UpdateStatus($"{placeText}{fullFileName} ({fileSizeText}) - {fileStatus}{lastFileText}",None);
 
                     if (mediaInfo.Category == FileCategory.Image)
                         DisplayImage(mediaInfo);
@@ -210,7 +208,7 @@ namespace MediaOrganiser
                 },
                 None: () =>
                 {
-                    UpdateStatus("No files selected");
+                    UpdateStatus("No files selected", None);
                     // Hide the center controls panel when no file is selected
                     pnlCenterControls.Visible = false;
                 });
@@ -223,40 +221,17 @@ namespace MediaOrganiser
         {
             try
             {
-                // todo can all this visiblity be driven from the main state
-                btnRotateLeft.Visible = false;
-                btnRotateRight.Visible = false;
-                if (videoPlayer != null) videoPlayer.Visible = false;
-                picCurrentImage.Image = null;
-
-                picCurrentImage.Visible = true;
-
-                if (openFolderPanel != null) openFolderPanel.Visible = false;
-
-                if (documentViewer != null)
+                InitializeDocumentViewer();
+                documentViewer.IfSome(dv =>
                 {
-                    documentViewer.Visible = true;
-                    documentViewer.BringToFront();
-
-                    var extension = Path.GetExtension(mediaInfo.FullPath.Value).ToLower();
-                    if (extension == ".doc" || extension == ".docx")
-                        Debug.WriteLine($"Loading Word document: {mediaInfo.FullPath.Value}");
-                    else
-                        Debug.WriteLine($"Loading document: {mediaInfo.FullPath.Value}");
-
-                    Debug.WriteLine($"Document viewer visible: {documentViewer.Visible}");
-                    Debug.WriteLine($"Picture box visible: {picCurrentImage.Visible}");
-                    Debug.WriteLine($"Document viewer size: {documentViewer.Width}x{documentViewer.Height}");
-
-                    documentViewer.LoadDocument(mediaInfo.FullPath.Value);
-                }
-                else
-                    Debug.WriteLine("Document viewer is null");
+                    dv.Visible = true;
+                    dv.BringToFront();
+                    dv.LoadDocument(mediaInfo.FullPath.Value);
+                });
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error displaying document: {ex.Message}");
-                ShowErrorWithOpenFolderButton(mediaInfo);
+                UpdateStatus("Error displaying document", ex);
             }
         }
 
@@ -265,73 +240,6 @@ namespace MediaOrganiser
 
         void btnRotateRight_Click(object sender, EventArgs e) =>
             ObservableState.RotateCurrentImage(Rotation.Rotate90); // Clockwise
-
-        /// <summary>
-        /// Shows error message with button to open file's directory
-        /// </summary>
-        void ShowErrorWithOpenFolderButton(MediaInfo mediaInfo)
-        {
-            if (openFolderPanel == null)
-            {
-                openFolderPanel = new Panel
-                {
-                    Dock = DockStyle.Fill
-                };
-                ThemeManager.StylePanel(openFolderPanel, ThemeManager.SecondaryBackColor);
-
-                var errorLabel = new Label
-                {
-                    Text = "Unable to preview file",
-                    AutoSize = false,
-                    TextAlign = ContentAlignment.MiddleCenter,
-                    Dock = DockStyle.Top,
-                    Height = 40
-                };
-                ThemeManager.StyleLabel(errorLabel, ThemeManager.HeaderFont);
-
-                openFolderButton = new Button
-                {
-                    Text = "Open enclosing folder",
-                    Dock = DockStyle.Top,
-                    Height = 40,
-                    Width = 200
-                };
-                ThemeManager.StyleButton(openFolderButton);
-
-                openFolderButton.Click += (s, e) =>
-                {
-                    var folderPath = Path.GetDirectoryName(mediaInfo.FullPath.Value);
-                    if (Directory.Exists(folderPath))
-                        Process.Start("explorer.exe", folderPath);
-                };
-
-                var containerPanel = new Panel
-                {
-                    Width = 200,
-                    Height = 100,
-                    Anchor = AnchorStyles.None
-                };
-                ThemeManager.StylePanel(containerPanel, ThemeManager.SecondaryBackColor);
-
-                containerPanel.Controls.Add(openFolderButton);
-                containerPanel.Controls.Add(errorLabel);
-                containerPanel.Location = new System.Drawing.Point(
-                    (openFolderPanel.Width - containerPanel.Width) / 2,
-                    (openFolderPanel.Height - containerPanel.Height) / 2);
-
-                openFolderPanel.Controls.Add(containerPanel);
-                picCurrentImage.Controls.Add(openFolderPanel);
-            }
-
-            if (videoPlayer != null) videoPlayer.Visible = false;
-            if (documentViewer != null) documentViewer.Visible = false;
-            picCurrentImage.Visible = false;
-
-            openFolderPanel.Visible = true;
-
-            if (openFolderButton != null)
-                openFolderButton.Tag = mediaInfo.FullPath.Value;
-        }
 
         /// <summary>
         /// Formats file size as KB or MB based on size
@@ -348,44 +256,20 @@ namespace MediaOrganiser
         {
             try
             {
-                // todo can all this visiblity be driven from the main state
                 btnRotateLeft.Visible = true;
-                btnRotateRight.Visible = true;
-                if (videoPlayer != null) videoPlayer.Visible = false;
-                if (documentViewer != null) documentViewer.Visible = false;
-                if (openFolderPanel != null) openFolderPanel.Visible = false;
+                btnRotateRight.Visible = true;               
                 picCurrentImage.Visible = true;
 
-                if (currentImage != null)
+                try
                 {
-                    currentImage.Dispose();
-                    currentImage = null;
+                    var rotatedImage = Windows.RotateImage(mediaInfo.Rotation, mediaInfo.FullPath.Value).Run();
+                    picCurrentImage.Image = rotatedImage;
                 }
-
-                // Load the original image
-                currentImage = System.Drawing.Image.FromFile(mediaInfo.FullPath.Value);
-
-                // Apply rotation if needed
-                if (mediaInfo.Rotation != Rotation.None)
+                catch (Exception ex)
                 {
-                    RotateFlipType rotateFlip = mediaInfo.Rotation switch
-                    {
-                        Rotation.Rotate90 => RotateFlipType.Rotate90FlipNone,
-                        Rotation.Rotate180 => RotateFlipType.Rotate180FlipNone,
-                        Rotation.Rotate270 => RotateFlipType.Rotate270FlipNone,
-                        _ => RotateFlipType.RotateNoneFlipNone
-                    };
-
-                    // Create a new bitmap with the rotation applied
-                    System.Drawing.Bitmap rotatedImage = new System.Drawing.Bitmap(currentImage);
-                    rotatedImage.RotateFlip(rotateFlip);
-
-                    // Dispose the original and use the rotated one
-                    currentImage.Dispose();
-                    currentImage = rotatedImage;
-                }
-
-                picCurrentImage.Image = currentImage;
+                    picCurrentImage.Image = D.Image.FromFile(mediaInfo.FullPath.Value);
+                    UpdateStatus("Unable to rotate image", ex);
+                }                               
 
                 // Show/hide rotation buttons for images only
                 btnRotateLeft.Visible = true;
@@ -393,8 +277,7 @@ namespace MediaOrganiser
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error loading image: {ex.Message}");
-                ShowErrorWithOpenFolderButton(mediaInfo);
+                UpdateStatus($"Error displaying image: {mediaInfo.FullPath.Value}", ex);
             }
         }
 
@@ -405,68 +288,41 @@ namespace MediaOrganiser
         {
             try
             {
-                // todo can all this visiblity be driven from the main state
-                btnRotateLeft.Visible = false;
-                btnRotateRight.Visible = false;
-                picCurrentImage.Image = null;
-                if (documentViewer != null) documentViewer.Visible = false;
-                if (openFolderPanel != null) openFolderPanel.Visible = false;
+                InitializeVideoPlayer();
 
-                if (videoPlayer != null)
+                videoPlayer.IfSome(vp =>
                 {
-                    videoPlayer.Visible = true;
-                    videoPlayer.SetSource(mediaInfo.FullPath.Value);
-                    videoPlayer.Play();
-                }
+                    vp.Visible = true;
+                    vp.SetSource(mediaInfo.FullPath.Value);
+                    vp.Play();
+                });
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error playing video: {ex.Message}");
-                UpdateStatus($"Error playing video: {mediaInfo.FileName.Value}");
-                ShowErrorWithOpenFolderButton(mediaInfo);
+                UpdateStatus($"Error playing video: {mediaInfo.FileName.Value}", ex);
             }
+        }
+
+        void HideImageUI()
+        {
+            btnRotateLeft.Visible = false;
+            btnRotateRight.Visible = false;
+            picCurrentImage.Image = null;
         }
 
         /// <summary>
-        /// Stops any currently playing media or closes documents
+        /// Stops and disposes all media viewers
         /// </summary>
-        void StopMedia()
+        void DisposeMedia()
         {
-            if (videoPlayer != null && videoPlayer.Visible)
-                try
-                {
-                    videoPlayer.Stop();
-                    videoPlayer.Visible = false;
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"Error stopping media: {ex.Message}");
-                }
-
-            try
-            {
-                if (documentViewer != null)
-                {
-                    documentViewer.Dispose();
-                    documentViewer = null;
-                    InitializeDocumentViewer();
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Error resetting document viewer: {ex.Message}");
-            }
-
-            if (currentImage != null)
-            {
-                currentImage.Dispose();
-                currentImage = null;
-                picCurrentImage.Image = null;
-            }
+            DisposeVideoPlayer();               
+            DisposeDocumentViewer();
+            HideImageUI();
         }
 
-        // If you specifically need to run CheckSavedState on a background thread,
-        // use this version instead:
+        /// <summary>
+        /// Checks to see if saved state and loads if requested
+        /// </summary>
         void CheckSavedStateAsync()
         {
             Task.Run(() =>
@@ -489,7 +345,7 @@ namespace MediaOrganiser
 
                             if (result == DialogResult.Yes)
                             {
-                                UpdateStatus("Previous session loaded");
+                                UpdateStatus("Previous session loaded", None);
                                 ObservableState.Update(state);
                             }
                             else
@@ -511,41 +367,51 @@ namespace MediaOrganiser
             {
                 ObservableState.StateChanged -= OnStateChanged;
 
-                if (currentImage != null)
-                {
-                    currentImage.Dispose();
-                    currentImage = null;
-                }
+                DisposeMedia();
 
-                if (videoPlayer != null)
-                    try
-                    {
-                        videoPlayer.Stop();
-                        videoPlayer.Dispose();
-                        videoPlayer = null;
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"Error disposing video player: {ex.Message}");
-                    }
+                if (disposing && (components != null))
+                    components.Dispose();
 
-                if (documentViewer != null)
-                    try
-                    {
-                        documentViewer.Dispose();
-                        documentViewer = null;
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"Error disposing document viewer: {ex.Message}");
-                    }
+                base.Dispose(disposing);
             }
-
-            if (disposing && (components != null))
-                components.Dispose();
-
-            base.Dispose(disposing);
         }
+
+        void DisposeVideoPlayer() =>
+            videoPlayer.IfSome(vp =>
+            {
+                try
+                {
+                    vp.Stop();
+                    vp.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error disposing video player: {ex.Message}");
+                }
+                finally
+                {
+                    videoPlayer = None;
+                }
+            });
+        
+        
+        void DisposeDocumentViewer() =>
+            documentViewer.IfSome(dv =>
+            {
+                try
+                {
+                    dv.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error disposing document viewer: {ex.Message}");
+                }
+                finally
+                {
+                    documentViewer = None;
+                }
+            });
+               
 
         /// <summary>
         /// Loads the last used directory path from settings
@@ -610,15 +476,17 @@ namespace MediaOrganiser
         /// <summary>
         /// Updates the status label with text, ensuring UI thread safety
         /// </summary>
-        void UpdateStatus(string text)
+        void UpdateStatus(string text, Option<Exception> exception)
         {
             if (lblStatus.InvokeRequired)
             {
-                lblStatus.Invoke(() => UpdateStatus(text));
+                lblStatus.Invoke(() => UpdateStatus(text, exception));
                 return;
             }
 
             lblStatus.Text = text.Length > 100 ? text.Substring(0, 97) + "..." : text;
+
+            exception.IfSome(ex => Debug.Write(ex));
         }
 
         /// <summary>
@@ -658,7 +526,7 @@ namespace MediaOrganiser
 
             void OnError(Error error)
             {
-                UpdateStatus("Status: Error during scan.");
+                UpdateStatus("Status: Error during scan.", None);
                 ShowMessageBox(
                     $"An error occurred while scanning: {error.Message}",
                     "Scan Error",
@@ -675,7 +543,7 @@ namespace MediaOrganiser
                 try
                 {
                     ObservableState.SetWorkInProgress(true);
-                    UpdateStatus("Status: Scanning files...");
+                    UpdateStatus("Status: Scanning files...", None);
 
                     var result = await mediaService.ScanDirectoryAsync(path);
 
@@ -683,7 +551,7 @@ namespace MediaOrganiser
                         Right: fileResponse =>
                         {
                             var fileCount = fileResponse.Files.Length;
-                            UpdateStatus($"Status: Found {fileCount} media files.");
+                            UpdateStatus($"Status: Found {fileCount} media files.", None);
 
                             if (fileResponse.UserErrors.Length > 0)
                                 ErrorListForm.ShowErrors(
@@ -756,7 +624,7 @@ namespace MediaOrganiser
 
             void OnError(Error error)
             {
-                UpdateStatus("Status: Unexpected error during file organisation.");
+                UpdateStatus("Status: Unexpected error during file organisation.", None);
                 ShowMessageBox(
                     $"An unexpected error occurred: {error.Message}",
                     "Unexpected Error",
@@ -768,14 +636,14 @@ namespace MediaOrganiser
             try
             {
                 ObservableState.SetWorkInProgress(true);
-                UpdateStatus("Status: Organising files...");
+                UpdateStatus("Status: Organising files...", None);
 
                 var result = await mediaService.OrganizeFilesAsync(destinationDialog.SelectedPath);
 
                 result.Match(
                     Right: organiseResponse =>
                     {
-                        UpdateStatus($"Media organised.");
+                        UpdateStatus($"Media organised.", None);
 
                         if (organiseResponse.UserErrors.Length > 0)
                         {

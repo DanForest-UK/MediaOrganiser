@@ -97,7 +97,7 @@ namespace MediaOrganiser.Logic
                        file.Rotation != Rotation.None &&
                        file.Category == FileCategory.Image)
                  from _ in shouldRotate
-                    ? Runtime.RotateImage(file, targetPath)
+                    ? Runtime.RotateImageAndSave(file, targetPath)
                       | @catch(err => // If we fail to rotate, we do a normal move but still log an error
                             from _1 in CopyFile(file.FullPath.Value, targetPath)
                             from _2 in IO.fail<Unit>(UnableToRotate(file.FullPath.Value, err))

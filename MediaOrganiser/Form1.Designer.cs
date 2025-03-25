@@ -93,7 +93,7 @@
             lblStatus.Location = new System.Drawing.Point(11, 781);
             lblStatus.Margin = new Padding(4, 0, 4, 0);
             lblStatus.Name = "lblStatus";
-            lblStatus.Size = new System.Drawing.Size(620, 41);
+            lblStatus.Size = new System.Drawing.Size(828, 41);
             lblStatus.TabIndex = 5;
             lblStatus.Text = "Ready";
             // 

@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using static LanguageExt.Prelude;
 using static MediaOrganiser.Core.Types;
+using D = System.Drawing;
 
 namespace MediaOrganiser
 {
@@ -17,13 +18,22 @@ namespace MediaOrganiser
         /// <param name="file"></param>
         /// <param name="targetPath"></param>
         /// <returns></returns>
-        public static IO<Unit> RotateImage(MediaInfo file, string targetPath) =>
+        public static IO<Unit> RotateImageAndSave(MediaInfo file, string targetPath) =>
+            from image in RotateImage(file.Rotation, file.FullPath.Value)
+            from _ in IO.lift(() => image.Save(targetPath))
+            select unit;
+        
+       /// <summary>
+       /// Create rotated bitmap
+       /// </summary>
+       /// <param name="rotation"></param>
+       /// <param name="path"></param>
+       /// <returns></returns>
+        public static IO<Bitmap> RotateImage(Rotation rotation, string path) =>
             IO.lift(() =>
             {
-                using var image = System.Drawing.Image.FromFile(file.FullPath.Value);
-                
-                // Apply rotation
-                RotateFlipType rotateFlip = file.Rotation switch
+                using var image = System.Drawing.Image.FromFile(path);
+                RotateFlipType rotateFlip = rotation switch
                 {
                     Rotation.Rotate90 => RotateFlipType.Rotate90FlipNone,
                     Rotation.Rotate180 => RotateFlipType.Rotate180FlipNone,
@@ -31,14 +41,10 @@ namespace MediaOrganiser
                     _ => RotateFlipType.RotateNoneFlipNone
                 };
 
-                // Create a new bitmap with rotation applied
-                using (var rotatedImage = new System.Drawing.Bitmap(image))
-                {
-                    rotatedImage.RotateFlip(rotateFlip);
-                    rotatedImage.Save(targetPath);
-                }
-                
-                return unit;
+                // Create a new bitmap with the rotation applied
+                System.Drawing.Bitmap rotatedImage = new System.Drawing.Bitmap(image);
+                rotatedImage.RotateFlip(rotateFlip);
+                return rotatedImage;
             });
     }
 }

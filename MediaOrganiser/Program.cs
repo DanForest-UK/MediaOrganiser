@@ -24,7 +24,7 @@ namespace MediaOrganiser
             ApplyModernStyles();
 
             // Setup dependency for rotating image in a windows app
-            Runtime.RotateImage = Windows.RotateImage;
+            Runtime.RotateImageAndSave = Windows.RotateImageAndSave;
 
             Application.Run(new Form1());
         }

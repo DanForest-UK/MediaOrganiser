@@ -351,6 +351,7 @@ namespace MediaOrganiser
 
         /// <summary>
         /// Loads a PDF document using IronPDF with cancellation support
+        /// // todo do we need the cancellation support
         /// </summary>
         async void LoadPdfDocumentAsync(string filePath, CancellationToken cancellationToken)
         {
@@ -438,6 +439,11 @@ namespace MediaOrganiser
                     Debug.WriteLine($"PDF loading error: {ex.Message}");
                     ShowErrorMessage($"Error loading PDF: {ex.Message}");
                 }
+
+                SafeInvokeOnUIThread(() =>
+                {
+                    ShowOpenFileUI(filePath);
+                });
             }
         }
 
@@ -531,7 +537,7 @@ namespace MediaOrganiser
                             Debug.WriteLine($"Word document conversion failed: {ex.Message}");
                             SafeInvokeOnUIThread(() =>
                             {
-                                ShowWordExternalOpenPanel(filePath);
+                                ShowOpenFileUI(filePath);
                             });
                         }
                     }
@@ -548,7 +554,7 @@ namespace MediaOrganiser
                     {
                         // Fall back to external app if conversion fails
                         CleanupPdfResources();
-                        ShowWordExternalOpenPanel(filePath);
+                        ShowOpenFileUI(filePath);
                     });
                 }
             }
@@ -557,7 +563,7 @@ namespace MediaOrganiser
         /// <summary>
         /// Creates a panel with button to open Word document externally
         /// </summary>
-        void ShowWordExternalOpenPanel(string filePath)
+        void ShowOpenFileUI(string filePath)
         {
             SafeInvokeOnUIThread(() => {
                 // Create a simple panel with a button to open Word doc
