@@ -71,40 +71,30 @@ namespace MediaOrganiser
         /// <summary>
         /// Initializes the video player control
         /// </summary>
-        void InitializeVideoPlayer()
-        {
-            try
+        void InitializeVideoPlayer() =>
+            Try.lift(() =>
             {
                 var vp = new VideoPlayerControl();
                 vp.Dock = DockStyle.Fill;
                 vp.Visible = false;
                 picCurrentImage.Controls.Add(vp);
                 videoPlayer = vp;
-            }
-            catch (Exception ex)
-            {
-                UpdateStatus("Error: Video player could not be initialized", ex);
-            }
-        }
+            }).IfFail(ex =>
+                UpdateStatus("Error: Video player could not be initialized", ex.Exception));
 
         /// <summary>
         /// Initializes the document viewer control
         /// </summary>
-        void InitializeDocumentViewer()
-        {
-            try
+        void InitializeDocumentViewer() =>
+            Try.lift(() =>
             {
                 var dv = new DocumentViewerControl();
                 dv.Dock = DockStyle.Fill;
                 dv.Visible = false;
                 picCurrentImage.Controls.Add(dv);
                 documentViewer = dv;
-            }
-            catch (Exception ex)
-            {
-                UpdateStatus("Error: Document viewer could not be initialized", ex);
-            }
-        }
+            }).IfFail(ex =>
+                UpdateStatus("Error: Document viewer could not be initialized", ex.Exception));
 
         /// <summary>
         /// Updates UI components based on application state changes
@@ -194,7 +184,7 @@ namespace MediaOrganiser
 
                     var placeText = $"{state.CurrentFile.Map(v => v.Value).IfNone(0)} of {state.Files.Count()} files: ";
 
-                    UpdateStatus($"{placeText}{fullFileName} ({fileSizeText}) - {fileStatus}{lastFileText}",None);
+                    UpdateStatus($"{placeText}{fullFileName} ({fileSizeText}) - {fileStatus}{lastFileText}", None);
 
                     if (mediaInfo.Category == FileCategory.Image)
                         DisplayImage(mediaInfo);
@@ -217,9 +207,8 @@ namespace MediaOrganiser
         /// <summary>
         /// Displays a document file
         /// </summary>
-        void DisplayDocument(MediaInfo mediaInfo)
-        {
-            try
+        void DisplayDocument(MediaInfo mediaInfo) =>
+            Try.lift(() =>
             {
                 InitializeDocumentViewer();
                 documentViewer.IfSome(dv =>
@@ -228,12 +217,9 @@ namespace MediaOrganiser
                     dv.BringToFront();
                     dv.LoadDocument(mediaInfo.FullPath.Value);
                 });
-            }
-            catch (Exception ex)
-            {
-                UpdateStatus("Error displaying document", ex);
-            }
-        }
+                return unit;
+            }).IfFail(ex =>
+                UpdateStatus("Error displaying document", ex.Exception));
 
         void btnRotateLeft_Click(object sender, EventArgs e) =>
             ObservableState.RotateCurrentImage(Rotation.Rotate270); // Counterclockwise
@@ -252,41 +238,38 @@ namespace MediaOrganiser
         /// <summary>
         /// Displays an image file
         /// </summary>
-        void DisplayImage(MediaInfo mediaInfo)
-        {
-            try
+        void DisplayImage(MediaInfo mediaInfo) =>
+            Try.lift(() =>
             {
                 btnRotateLeft.Visible = true;
-                btnRotateRight.Visible = true;               
+                btnRotateRight.Visible = true;
                 picCurrentImage.Visible = true;
 
-                try
-                {
-                    var rotatedImage = Windows.RotateImage(mediaInfo.Rotation, mediaInfo.FullPath.Value).Run();
-                    picCurrentImage.Image = rotatedImage;
-                }
-                catch (Exception ex)
-                {
-                    picCurrentImage.Image = D.Image.FromFile(mediaInfo.FullPath.Value);
-                    UpdateStatus("Unable to rotate image", ex);
-                }                               
+                var rotationResult = Try.lift(() => Windows.RotateImage(mediaInfo.Rotation, mediaInfo.FullPath.Value).Run());
+
+                rotationResult.Match(
+                    Succ: rotatedImage =>
+                    {
+                        picCurrentImage.Image = rotatedImage;
+                        return unit;
+                    },
+                    Fail: ex =>
+                    {
+                        picCurrentImage.Image = D.Image.FromFile(mediaInfo.FullPath.Value);
+                        return UpdateStatus("Unable to rotate image", ex.Exception);
+                    });
 
                 // Show/hide rotation buttons for images only
                 btnRotateLeft.Visible = true;
                 btnRotateRight.Visible = true;
-            }
-            catch (Exception ex)
-            {
-                UpdateStatus($"Error displaying image: {mediaInfo.FullPath.Value}", ex);
-            }
-        }
+            }).IfFail(ex =>
+                UpdateStatus($"Error displaying image: {mediaInfo.FullPath.Value}", ex.Exception));
 
         /// <summary>
         /// Displays and plays a video file
         /// </summary>
-        void DisplayVideo(MediaInfo mediaInfo)
-        {
-            try
+        void DisplayVideo(MediaInfo mediaInfo) =>
+            Try.lift(() =>
             {
                 InitializeVideoPlayer();
 
@@ -296,12 +279,8 @@ namespace MediaOrganiser
                     vp.SetSource(mediaInfo.FullPath.Value);
                     vp.Play();
                 });
-            }
-            catch (Exception ex)
-            {
-                UpdateStatus($"Error playing video: {mediaInfo.FileName.Value}", ex);
-            }
-        }
+            }).IfFail(ex =>
+                UpdateStatus($"Error playing video: {mediaInfo.FileName.Value}", ex.Exception));
 
         void HideImageUI()
         {
@@ -315,7 +294,7 @@ namespace MediaOrganiser
         /// </summary>
         void DisposeMedia()
         {
-            DisposeVideoPlayer();               
+            DisposeVideoPlayer();
             DisposeDocumentViewer();
             HideImageUI();
         }
@@ -376,49 +355,43 @@ namespace MediaOrganiser
             }
         }
 
-        void DisposeVideoPlayer() =>
+        void DisposeVideoPlayer()
+        {
             videoPlayer.IfSome(vp =>
-            {
-                try
+                Try.lift(() =>
                 {
                     vp.Stop();
                     vp.Dispose();
-                }
-                catch (Exception ex)
+                }).IfFail(ex =>
                 {
                     Debug.WriteLine($"Error disposing video player: {ex.Message}");
-                }
-                finally
-                {
-                    videoPlayer = None;
-                }
-            });
-        
-        
-        void DisposeDocumentViewer() =>
+                    return unit;
+                }));
+            videoPlayer = None;
+        }
+
+
+        void DisposeDocumentViewer()
+        {
             documentViewer.IfSome(dv =>
-            {
-                try
+                Try.lift(() =>
                 {
                     dv.Dispose();
-                }
-                catch (Exception ex)
+                }).IfFail(ex =>
                 {
                     Debug.WriteLine($"Error disposing document viewer: {ex.Message}");
-                }
-                finally
-                {
-                    documentViewer = None;
-                }
-            });
-               
+                    return unit;
+                }));
+
+           documentViewer = None;
+        }
+
 
         /// <summary>
         /// Loads the last used directory path from settings
         /// </summary>
-        void LoadLastDirectory()
-        {
-            try
+        void LoadLastDirectory() =>
+            Try.lift(() =>
             {
                 var settingsFolder = Path.GetDirectoryName(settingsFilePath);
 
@@ -431,31 +404,28 @@ namespace MediaOrganiser
                     if (lastPath.HasValue() && Directory.Exists(lastPath))
                         ObservableState.SetCurrentFolder(lastPath);
                 }
-            }
-            catch (Exception ex)
+            }).IfFail(ex =>
             {
                 Debug.WriteLine($"Error loading last directory: {ex.Message}");
-            }
-        }
+                return unit;
+            });
 
         /// <summary>
         /// Saves the current directory path to settings
         /// </summary>
-        void SaveLastDirectory(string path)
-        {
-            try
+        void SaveLastDirectory(string path) =>
+            Try.lift(() =>
             {
                 var settingsFolder = Path.GetDirectoryName(settingsFilePath);
                 if (!Directory.Exists(settingsFolder))
                     Directory.CreateDirectory(settingsFolder!);
 
                 File.WriteAllText(settingsFilePath, path);
-            }
-            catch (Exception ex)
+            }).IfFail(ex =>
             {
                 Debug.WriteLine($"Error saving last directory: {ex.Message}");
-            }
-        }
+                return unit;
+            });
 
         /// <summary>
         /// Handles folder browsing
@@ -476,17 +446,18 @@ namespace MediaOrganiser
         /// <summary>
         /// Updates the status label with text, ensuring UI thread safety
         /// </summary>
-        void UpdateStatus(string text, Option<Exception> exception)
+        Unit UpdateStatus(string text, Option<Exception> exception)
         {
             if (lblStatus.InvokeRequired)
             {
                 lblStatus.Invoke(() => UpdateStatus(text, exception));
-                return;
+                return unit;
             }
 
             lblStatus.Text = text.Length > 100 ? text.Substring(0, 97) + "..." : text;
 
             exception.IfSome(ex => Debug.Write(ex));
+            return unit;
         }
 
         /// <summary>
@@ -538,9 +509,8 @@ namespace MediaOrganiser
             /// <summary>
             /// Scans a directory for media files
             /// </summary>
-            async Task ScanDirectoryAsync(string path)
-            {
-                try
+            async Task ScanDirectoryAsync(string path) =>
+                await Try.lift(async () =>
                 {
                     ObservableState.SetWorkInProgress(true);
                     UpdateStatus("Status: Scanning files...", None);
@@ -561,17 +531,15 @@ namespace MediaOrganiser
                         },
                         Left: OnError);
 
-                }
-                catch (Exception ex)
+                }).IfFail(ex =>
                 {
                     OnError(Error.New(ex));
-                }
-                finally
-                {
-                    ObservableState.SetWorkInProgress(false);
-                }
-            }
+                    return Task.FromResult(unit);
+                });
+
+            ObservableState.SetWorkInProgress(false);
         }
+        
         /// <summary>
         /// Handles the Organise Files button click
         /// </summary>
@@ -633,7 +601,7 @@ namespace MediaOrganiser
                 Debug.WriteLine($"Error details: {error}");
             }
 
-            try
+            await Try.lift(async () =>
             {
                 ObservableState.SetWorkInProgress(true);
                 UpdateStatus("Status: Organising files...", None);
@@ -661,16 +629,14 @@ namespace MediaOrganiser
                         }
                     },
                     Left: OnError);
-
-            }
-            catch (Exception ex)
+                return unit;
+            }).IfFail(ex =>
             {
                 OnError(Error.New(ex));
-            }
-            finally
-            {
-                ObservableState.SetWorkInProgress(false);                
-            }
+                return Task.FromResult(unit);
+            });                
+              
+            ObservableState.SetWorkInProgress(false);    
         }
 
         /// <summary>

@@ -1,7 +1,9 @@
-﻿using System;
+﻿using LanguageExt;
+using System;
 using System.Windows.Forms;
 using System.Windows.Forms.Integration;
 using System.Windows.Media;
+using static LanguageExt.Prelude;
 
 namespace MediaOrganiser
 {
@@ -66,63 +68,59 @@ namespace MediaOrganiser
         /// <summary>
         /// Sets the source URI of the media to play
         /// </summary>
-        public void SetSource(string filePath)
-        {
-            try
+        public Unit SetSource(string filePath) =>
+            Try.lift(() =>
             {
                 // Set the source of the MediaElement
                 mediaElement.Source = new Uri(filePath);
-            }
-            catch (Exception ex)
+                return unit;
+            }).IfFail(ex =>
             {
                 System.Diagnostics.Debug.WriteLine($"Error setting media source: {ex.Message}");
-            }
-        }
+                return unit;
+            });
 
         /// <summary>
         /// Plays the current media
         /// </summary>
-        public void Play()
-        {
-            try
+        public Unit Play() =>
+            Try.lift(() =>
             {
                 mediaElement.Play();
-            }
-            catch (Exception ex)
+                return unit;
+            }).IfFail(ex =>
             {
                 System.Diagnostics.Debug.WriteLine($"Error playing media: {ex.Message}");
-            }
-        }
+                return unit;
+            });
 
         /// <summary>
         /// Stops the current media
         /// </summary>
-        public void Stop()
-        {
-            try
+        public Unit Stop() =>
+            Try.lift(() =>
             {
                 mediaElement.Stop();
-            }
-            catch (Exception ex)
+                return unit;
+            }).IfFail(ex =>
             {
                 System.Diagnostics.Debug.WriteLine($"Error stopping media: {ex.Message}");
-            }
-        }
+                return unit;
+            });
 
         /// <summary>
         /// Pauses the current media
         /// </summary>
-        public void Pause()
-        {
-            try
+        public Unit Pause() =>
+            Try.lift(() =>
             {
                 mediaElement.Pause();
-            }
-            catch (Exception ex)
+                return unit;
+            }).IfFail(ex =>
             {
                 System.Diagnostics.Debug.WriteLine($"Error pausing media: {ex.Message}");
-            }
-        }
+                return unit;
+            });
 
         /// <summary>
         /// Clean up resources
@@ -131,7 +129,7 @@ namespace MediaOrganiser
         {
             if (disposing)
             {
-                try
+                Try.lift(() =>
                 {
                     // Stop any playing media
                     Stop();
@@ -141,11 +139,12 @@ namespace MediaOrganiser
 
                     // Dispose the ElementHost
                     elementHost?.Dispose();
-                }
-                catch (Exception ex)
+                    return unit;
+                }).IfFail(ex =>
                 {
                     System.Diagnostics.Debug.WriteLine($"Error disposing video player: {ex.Message}");
-                }
+                    return unit;
+                });
             }
 
             base.Dispose(disposing);

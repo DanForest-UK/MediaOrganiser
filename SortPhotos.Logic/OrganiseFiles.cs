@@ -132,7 +132,7 @@ namespace MediaOrganiser.Logic
                 {
                     targetPath = Path.Combine(targetDir, file.FileName.Value + counter++ + file.Extension.Value);
                 }
-                return targetDir;
+                return targetPath;
             });
 
         /// <summary>

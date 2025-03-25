@@ -16,7 +16,6 @@ namespace MediaOrganiser
     /// </summary>
     public static class StateSerialiser
     {
-
         /// <summary>
         /// A serializable version of the application state
         /// </summary>
@@ -40,13 +39,12 @@ namespace MediaOrganiser
         /// </summary>
         public static string GetStateFilePath() =>
             Path.Combine(AppDomain.CurrentDomain.BaseDirectory, StateFileName);
-       
+
         /// <summary>
         /// Serializes the current application state to disk
         /// </summary>
-        public static void SaveState(AppModel state)
-        {
-            try
+        public static Unit SaveState(AppModel state) =>
+            Try.lift(() =>
             {
                 if (state.Files.Values.Any())
                 {
@@ -55,13 +53,12 @@ namespace MediaOrganiser
                     var json = JsonSerializer.Serialize(serializableState, SerializerOptions);
                     File.WriteAllText(GetStateFilePath(), json);
                 }
-            }
-            catch (Exception ex)
+                return unit;
+            }).IfFail(ex =>
             {
                 Debug.WriteLine($"Error saving state: {ex.Message}");
-            }
-        }
-
+                return unit;
+            });
 
         /// <summary>
         /// Attempts to load saved state from disk
@@ -88,7 +85,7 @@ namespace MediaOrganiser
             {
                 Debug.WriteLine($"Error loading state: {ex.Message}");
                 return None;
-            });       
+            });
 
         public static SerialisableAppModel ToSerializableAppModel(this AppModel model) =>
             new SerialisableAppModel(
@@ -113,7 +110,6 @@ namespace MediaOrganiser
                 SortByYear: new SortByYear(model.SortByYear),
                 KeepParentFolder: new KeepParentFolder(model.KeepParentFolder));
 
-
         /// <summary>
         /// Deletes the saved state file if it exists
         /// </summary>
@@ -121,9 +117,9 @@ namespace MediaOrganiser
             Try.lift(() =>
             {
                 var statePath = GetStateFilePath();
-                if (File.Exists(statePath))                
+                if (File.Exists(statePath))
                     File.Delete(statePath);
-                
+                return unit;
             }).IfFail(ex =>
             {
                 Debug.WriteLine($"Error deleting state file: {ex.Message}");

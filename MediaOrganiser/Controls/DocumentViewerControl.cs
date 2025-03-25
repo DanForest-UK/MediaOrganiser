@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LanguageExt;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -13,6 +14,7 @@ using static MediaOrganiser.Core.Types;
 using Color = System.Drawing.Color;
 using Point = System.Drawing.Point;
 using Size = System.Drawing.Size;
+using static LanguageExt.Prelude;
 
 namespace MediaOrganiser
 {
@@ -187,7 +189,21 @@ namespace MediaOrganiser
             pdfPanel.Controls.Add(pdfPictureBox);
 
             // Initialize the IronPdf license if you have one
-            try
+            InitializeIronPdf();
+
+            // Add controls to this control
+            Controls.Add(txtDocumentContent);
+            Controls.Add(rtfDocumentContent);
+            Controls.Add(loadingPanel);
+            Controls.Add(pdfPanel);
+            Controls.Add(pdfNavigationPanel);
+        }
+
+        /// <summary>
+        /// Initialize IronPdf library
+        /// </summary>
+        private Unit InitializeIronPdf() =>
+            Try.lift(() =>
             {
                 // If you have a license, uncomment this line and add your license key
                 // IronPdf.License.LicenseKey = "YOUR-LICENSE-KEY";
@@ -204,36 +220,29 @@ namespace MediaOrganiser
                 }
 
                 Debug.WriteLine("IronPDF initialized successfully");
-            }
-            catch (Exception ex)
+                return unit;
+            }).IfFail(ex =>
             {
                 Debug.WriteLine($"Error initializing IronPDF: {ex.Message}");
-            }
-
-            // Add controls to this control
-            Controls.Add(txtDocumentContent);
-            Controls.Add(rtfDocumentContent);
-            Controls.Add(loadingPanel);
-            Controls.Add(pdfPanel);
-            Controls.Add(pdfNavigationPanel);
-        }
+                return unit;
+            });
 
         /// <summary>
         /// Safely executes an action on the UI thread
         /// </summary>
-        private void SafeInvokeOnUIThread(Action action)
-        {
-            if (IsDisposed)
+        private Unit SafeInvokeOnUIThread(Action action) =>
+            Try.lift(() =>
             {
-                Debug.WriteLine("Control is disposed, not executing UI action");
-                return;
-            }
+                if (IsDisposed)
+                {
+                    Debug.WriteLine("Control is disposed, not executing UI action");
+                    return unit;
+                }
 
-            try
-            {
                 if (InvokeRequired)
                 {
-                    syncContext.Post(_ => {
+                    syncContext.Post(_ =>
+                    {
                         if (!IsDisposed)
                             action();
                     }, null);
@@ -242,19 +251,19 @@ namespace MediaOrganiser
                 {
                     action();
                 }
-            }
-            catch (Exception ex)
+                return unit;
+            }).IfFail(ex =>
             {
                 Debug.WriteLine($"Error invoking action on UI thread: {ex.Message}");
-            }
-        }
+                return unit;
+            });
 
         /// <summary>
         /// Loads and displays a document based on its file extension
         /// </summary>
         public void LoadDocument(string filePath)
         {
-            try
+            Try.lift(() =>
             {
                 // Cancel any existing document loading operation
                 loadingCts?.Cancel();
@@ -268,11 +277,12 @@ namespace MediaOrganiser
                 if (!File.Exists(filePath))
                 {
                     ShowErrorMessage($"File not found: {filePath}");
-                    return;
+                    return unit;
                 }
 
                 // Show loading indicator while we process the document
-                SafeInvokeOnUIThread(() => {
+                SafeInvokeOnUIThread(() =>
+                {
                     loadingPanel.Visible = true;
                 });
 
@@ -296,174 +306,155 @@ namespace MediaOrganiser
                         LoadUnsupportedDocument(filePath);
                         break;
                 }
-            }
-            catch (Exception ex)
+                return unit;
+            }).IfFail(ex =>
             {
                 Debug.WriteLine($"Error loading document: {ex.Message}");
                 ShowErrorMessage($"Cannot display this document: {ex.Message}");
-            }
+                return unit;
+            });
         }
 
         /// <summary>
         /// Loads and displays a plain text document
         /// </summary>
-        void LoadTextDocument(string filePath)
-        {
-            try
+        void LoadTextDocument(string filePath) =>
+            Try.lift(() =>
             {
                 // Read text file with appropriate encoding detection
                 var text = File.ReadAllText(filePath, Encoding.UTF8);
 
-                SafeInvokeOnUIThread(() => {
+                SafeInvokeOnUIThread(() =>
+                {
                     txtDocumentContent.Text = text;
                     txtDocumentContent.Visible = true;
                     rtfDocumentContent.Visible = false;
                     loadingPanel.Visible = false;
                 });
-            }
-            catch (Exception ex)
+                return unit;
+            }).IfFail(ex =>
             {
                 Debug.WriteLine($"Error loading text document: {ex.Message}");
                 ShowErrorMessage($"Error loading text file: {ex.Message}");
-            }
-        }
+                return unit;
+            });
 
         /// <summary>
         /// Loads and displays an RTF document
         /// </summary>
-        void LoadRtfDocument(string filePath)
-        {
-            try
+        void LoadRtfDocument(string filePath) =>
+            Try.lift(() =>
             {
-                SafeInvokeOnUIThread(() => {
+                SafeInvokeOnUIThread(() =>
+                {
                     rtfDocumentContent.LoadFile(filePath);
                     rtfDocumentContent.Visible = true;
                     txtDocumentContent.Visible = false;
                     loadingPanel.Visible = false;
                 });
-            }
-            catch (Exception ex)
+                return unit;
+            }).IfFail(ex =>
             {
                 Debug.WriteLine($"Error loading RTF document: {ex.Message}");
                 ShowErrorMessage($"Error loading RTF file: {ex.Message}");
-            }
-        }
+                return unit;
+            });
 
         /// <summary>
         /// Loads a PDF document using IronPDF with cancellation support
         /// // todo do we need the cancellation support
         /// </summary>
-        async void LoadPdfDocumentAsync(string filePath, CancellationToken cancellationToken)
-        {
-            try
+        async void LoadPdfDocumentAsync(string filePath, CancellationToken cancellationToken) =>
+            await Try.lift(async () =>
             {
-                // Load PDF on a background thread to keep UI responsive
-                await Task.Run(async () => {
-                    try
-                    {
-                        // Add a timeout for loading the PDF
-                        var loadPdfTask = Task.Run(() => new PdfDocument(filePath), cancellationToken);
+                // Add a timeout for loading the PDF
+                var loadPdfTask = Task.Run(() => new PdfDocument(filePath), cancellationToken);
 
-                        // Wait for the task to complete with a timeout
-                        if (await Task.WhenAny(loadPdfTask, Task.Delay(15000, cancellationToken)) != loadPdfTask)
-                        {
-                            if (!cancellationToken.IsCancellationRequested)
-                            {
-                                throw new TimeoutException("PDF loading timed out after 15 seconds");
-                            }
-                            return; // Cancelled
-                        }
-
-                        if (cancellationToken.IsCancellationRequested) return;
-
-                        // Get the loaded PDF document
-                        currentPdfDocument = await loadPdfTask;
-                        totalPdfPages = currentPdfDocument.PageCount;
-
-                        // Add a timeout for rendering the PDF
-                        var renderTask = Task.Run(() => currentPdfDocument.ToBitmap(150), cancellationToken);
-
-                        if (await Task.WhenAny(renderTask, Task.Delay(15000, cancellationToken)) != renderTask)
-                        {
-                            if (!cancellationToken.IsCancellationRequested)
-                            {
-                                throw new TimeoutException("PDF rendering timed out after 15 seconds");
-                            }
-                            return; // Cancelled
-                        }
-
-                        if (cancellationToken.IsCancellationRequested) return;
-
-                        // Get the rendered images
-                        var images = await renderTask;
-                        var pages = new List<System.Drawing.Image>();
-
-                        foreach (var img in images)
-                        {
-                            if (cancellationToken.IsCancellationRequested) return;
-                            pages.Add(img);
-                        }
-
-                        pdfPageImages = pages.ToArray();
-
-                        // Show the first page
-                        currentPdfPage = 0;
-
-                        SafeInvokeOnUIThread(() => {
-                            if (!cancellationToken.IsCancellationRequested)
-                            {
-                                ShowPdfPage(0);
-                                pdfPanel.Visible = true;
-                                pdfNavigationPanel.Visible = true;
-                                loadingPanel.Visible = false;
-                                Debug.WriteLine("PDF loaded successfully with IronPDF");
-                            }
-                        });
-                    }
-                    catch (Exception ex)
-                    {
-                        if (!cancellationToken.IsCancellationRequested)
-                        {
-                            Debug.WriteLine($"Error rendering PDF with IronPDF: {ex.Message}");
-                            SafeInvokeOnUIThread(() => {
-                                ShowErrorMessage($"Error rendering PDF: {ex.Message}");
-                            });
-                        }
-                    }
-                }, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                if (!cancellationToken.IsCancellationRequested)
+                // Wait for the task to complete with a timeout
+                if (await Task.WhenAny(loadPdfTask, Task.Delay(15000, cancellationToken)) != loadPdfTask)
                 {
-                    Debug.WriteLine($"PDF loading error: {ex.Message}");
-                    ShowErrorMessage($"Error loading PDF: {ex.Message}");
+                    if (!cancellationToken.IsCancellationRequested)
+                    {
+                        throw new TimeoutException("PDF loading timed out after 15 seconds");
+                    }
+                    return unit;
                 }
+
+                if (cancellationToken.IsCancellationRequested) return unit;
+
+                // Get the loaded PDF document
+                currentPdfDocument = await loadPdfTask;
+                totalPdfPages = currentPdfDocument.PageCount;
+
+                // Add a timeout for rendering the PDF
+                var renderTask = Task.Run(() => currentPdfDocument.ToBitmap(150), cancellationToken);
+
+                if (await Task.WhenAny(renderTask, Task.Delay(15000, cancellationToken)) != renderTask)
+                {
+                    if (!cancellationToken.IsCancellationRequested)
+                    {
+                        throw new TimeoutException("PDF rendering timed out after 15 seconds");
+                    }
+                    return unit;
+                }
+
+                if (cancellationToken.IsCancellationRequested) return unit;
+
+                // Get the rendered images
+                var images = await renderTask;
+                var pages = new List<System.Drawing.Image>();
+
+                foreach (var img in images)
+                {
+                    if (cancellationToken.IsCancellationRequested) return unit;
+                    pages.Add(img);
+                }
+
+                pdfPageImages = pages.ToArray();
+
+                // Show the first page
+                currentPdfPage = 0;
 
                 SafeInvokeOnUIThread(() =>
                 {
-                    ShowOpenFileUI(filePath);
+                    if (!cancellationToken.IsCancellationRequested)
+                    {
+                        ShowPdfPage(0);
+                        pdfPanel.Visible = true;
+                        pdfNavigationPanel.Visible = true;
+                        loadingPanel.Visible = false;
+                        Debug.WriteLine("PDF loaded successfully with IronPDF");
+                    }
                 });
-            }
-        }
-
+                return unit;
+            }).IfFail(ex =>
+            {
+                if (!cancellationToken.IsCancellationRequested)
+                {
+                    Debug.WriteLine($"Error rendering PDF with IronPDF: {ex.Message}");
+                    SafeInvokeOnUIThread(() =>
+                    {
+                        ShowErrorMessage($"Error rendering PDF: {ex.Message}");
+                        ShowOpenFileUI(filePath);
+                    });
+                }
+                return Task.FromResult(unit);
+            });               
+           
+        
         /// <summary>
         /// Loads and displays a Word document by converting it to PDF using IronPDF
         /// </summary>
-        async void LoadWordDocument(string filePath, CancellationToken cancellationToken)
-        {
-            try
+        async void LoadWordDocument(string filePath, CancellationToken cancellationToken) =>
+        
+            await Try.lift(async () =>
             {
                 SafeInvokeOnUIThread(() =>
                 {
                     loadingLabel.Text = "Converting Word document...";
                 });
 
-                // Start completely detached rendering process that won't interact with UI until done
-                await Task.Run(async () =>
-                {
-                    try
-                    {
+                
                         // Create all resources locally within this task
                         var renderer = new DocxToPdfRenderer();
 
@@ -477,10 +468,10 @@ namespace MediaOrganiser
                             {
                                 throw new TimeoutException("Word document conversion timed out after 30 seconds");
                             }
-                            return; // Cancelled
+                            return unit;
                         }
 
-                        if (cancellationToken.IsCancellationRequested) return;
+                        if (cancellationToken.IsCancellationRequested) return unit;
 
                         // Get the converted PDF
                         var pdf = await convertTask;
@@ -497,10 +488,10 @@ namespace MediaOrganiser
                             {
                                 throw new TimeoutException("PDF rendering timed out after 15 seconds");
                             }
-                            return; // Cancelled
+                            return unit;
                         }
 
-                        if (cancellationToken.IsCancellationRequested) return;
+                        if (cancellationToken.IsCancellationRequested) return unit;
 
                         // Get the rendered images
                         var images = await renderTask;
@@ -508,7 +499,7 @@ namespace MediaOrganiser
 
                         foreach (var img in images)
                         {
-                            if (cancellationToken.IsCancellationRequested) return;
+                            if (cancellationToken.IsCancellationRequested) return unit;
                             pages.Add(img);
                         }
 
@@ -529,8 +520,8 @@ namespace MediaOrganiser
                                 Debug.WriteLine("Word document converted and loaded successfully");
                             }
                         });
-                    }
-                    catch (Exception ex)
+                        return unit;
+                    }).IfFail(ex =>
                     {
                         if (!cancellationToken.IsCancellationRequested)
                         {
@@ -538,108 +529,100 @@ namespace MediaOrganiser
                             SafeInvokeOnUIThread(() =>
                             {
                                 ShowOpenFileUI(filePath);
+                                CleanupPdfResources();
+                                ShowOpenFileUI(filePath);
                             });
                         }
-                    }
-                }, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                if (!cancellationToken.IsCancellationRequested)
-                {
-                    Debug.WriteLine($"Word document loading error: {ex.Message}");
-                    ShowErrorMessage($"Error loading Word document: {ex.Message}");
-                    Debug.WriteLine($"Error converting Word document: {ex.Message}");
-                    SafeInvokeOnUIThread(() =>
-                    {
-                        // Fall back to external app if conversion fails
-                        CleanupPdfResources();
-                        ShowOpenFileUI(filePath);
+                        return Task.FromResult(unit);
                     });
-                }
-            }
-        }
+
 
         /// <summary>
         /// Creates a panel with button to open Word document externally
         /// </summary>
-        void ShowOpenFileUI(string filePath)
-        {
-            SafeInvokeOnUIThread(() => {
-                // Create a simple panel with a button to open Word doc
-                Panel wordPanel = new Panel
+        void ShowOpenFileUI(string filePath) =>
+            SafeInvokeOnUIThread(() =>
+            {
+                Try.lift(() =>
                 {
-                    Dock = DockStyle.Fill
-                };
-                ThemeManager.StylePanel(wordPanel, ThemeManager.PrimaryBackColor);
+                    // Create a simple panel with a button to open Word doc
+                    Panel wordPanel = new Panel
+                    {
+                        Dock = DockStyle.Fill
+                    };
+                    ThemeManager.StylePanel(wordPanel, ThemeManager.PrimaryBackColor);
 
-                Label infoLabel = new Label
-                {
-                    Text = $"Document: {Path.GetFileName(filePath)}",
-                    AutoSize = false,
-                    TextAlign = ContentAlignment.MiddleCenter,
-                    Dock = DockStyle.Top,
-                    Height = 40
-                };
-                ThemeManager.StyleLabel(infoLabel, ThemeManager.HeaderFont);
+                    Label infoLabel = new Label
+                    {
+                        Text = $"Document: {Path.GetFileName(filePath)}",
+                        AutoSize = false,
+                        TextAlign = ContentAlignment.MiddleCenter,
+                        Dock = DockStyle.Top,
+                        Height = 40
+                    };
+                    ThemeManager.StyleLabel(infoLabel, ThemeManager.HeaderFont);
 
-                Label errorLabel = new Label
-                {
-                    Text = "Unable to render document in viewer. You can open it externally:",
-                    AutoSize = false,
-                    TextAlign = ContentAlignment.MiddleCenter,
-                    Dock = DockStyle.Top,
-                    Height = 40
-                };
-                ThemeManager.StyleLabel(errorLabel);
+                    Label errorLabel = new Label
+                    {
+                        Text = "Unable to render document in viewer. You can open it externally:",
+                        AutoSize = false,
+                        TextAlign = ContentAlignment.MiddleCenter,
+                        Dock = DockStyle.Top,
+                        Height = 40
+                    };
+                    ThemeManager.StyleLabel(errorLabel);
 
-                Button openButton = new Button
-                {
-                    Text = "Open",
-                    Width = 250,
-                    Height = 60,
-                    Anchor = AnchorStyles.None
-                };
-                ThemeManager.StyleButton(openButton);
+                    Button openButton = new Button
+                    {
+                        Text = "Open",
+                        Width = 250,
+                        Height = 60,
+                        Anchor = AnchorStyles.None
+                    };
+                    ThemeManager.StyleButton(openButton);
 
-                openButton.Click += (s, e) => OpenDocumentExternally(filePath);
+                    openButton.Click += (s, e) => OpenDocumentExternally(filePath);
 
-                // Center the button
-                openButton.Location = new System.Drawing.Point(
-                    (wordPanel.Width - openButton.Width) / 2,
-                    (wordPanel.Height - openButton.Height) / 2);
-
-                // Handle resize
-                wordPanel.Resize += (s, e) =>
-                {
+                    // Center the button
                     openButton.Location = new System.Drawing.Point(
                         (wordPanel.Width - openButton.Width) / 2,
                         (wordPanel.Height - openButton.Height) / 2);
-                };
 
-                // Add controls in reverse order for stacking
-                wordPanel.Controls.Add(openButton);
-                wordPanel.Controls.Add(errorLabel);
-                wordPanel.Controls.Add(infoLabel);
+                    // Handle resize
+                    wordPanel.Resize += (s, e) =>
+                    {
+                        openButton.Location = new System.Drawing.Point(
+                            (wordPanel.Width - openButton.Width) / 2,
+                            (wordPanel.Height - openButton.Height) / 2);
+                    };
 
-                Controls.Add(wordPanel);
-                wordPanel.BringToFront();
-                loadingPanel.Visible = false;
-            });
-        }
+                    // Add controls in reverse order for stacking
+                    wordPanel.Controls.Add(openButton);
+                    wordPanel.Controls.Add(errorLabel);
+                    wordPanel.Controls.Add(infoLabel);
+
+                    Controls.Add(wordPanel);
+                    wordPanel.BringToFront();
+                    loadingPanel.Visible = false;
+                    return unit;
+                }).IfFail(ex =>
+                {
+                    Debug.WriteLine($"Error creating open file UI: {ex.Message}");
+                    return unit;
+                });
+            });        
 
         /// <summary>
         /// Displays a specific page of the PDF
         /// </summary>
-        private void ShowPdfPage(int pageIndex)
-        {
-            if (pageIndex < 0 || pageIndex >= pdfPageImages.Length)
+        private void ShowPdfPage(int pageIndex) =>
+            Try.lift(() =>
             {
-                pageIndex = 0;
-            }
+                if (pageIndex < 0 || pageIndex >= pdfPageImages.Length)
+                {
+                    pageIndex = 0;
+                }
 
-            try
-            {
                 // Clean up old image if there is one
                 if (pdfPictureBox.Image != null && pdfPictureBox.Image != pdfPageImages[pageIndex])
                 {
@@ -655,33 +638,32 @@ namespace MediaOrganiser
                 // Update button states
                 btnPrevPage.Enabled = pageIndex > 0;
                 btnNextPage.Enabled = pageIndex < totalPdfPages - 1;
-            }
-            catch (Exception ex)
+                return unit;
+            }).IfFail(ex =>
             {
                 Debug.WriteLine($"Error showing PDF page: {ex.Message}");
-            }
-        }
+                return unit;
+            });
 
         /// <summary>
         /// Opens a document in its associated external application
         /// </summary>
-        private void OpenDocumentExternally(string filePath)
-        {
-            try
+        private Unit OpenDocumentExternally(string filePath) =>
+            Try.lift(() =>
             {
                 Process.Start(new ProcessStartInfo
                 {
                     FileName = filePath,
                     UseShellExecute = true
                 });
-            }
-            catch (Exception ex)
+                return unit;
+            }).IfFail(ex =>
             {
                 Debug.WriteLine($"Error opening file externally: {ex.Message}");
                 MessageBox.Show($"Could not open the document: {ex.Message}",
                                 "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
+                return unit;
+            });
 
         /// <summary>
         /// Shows a message for unsupported document types
@@ -690,7 +672,8 @@ namespace MediaOrganiser
         {
             ShowErrorMessage($"Preview not available for {Path.GetExtension(filePath).ToUpper()} files.");
 
-            SafeInvokeOnUIThread(() => {
+            SafeInvokeOnUIThread(() =>
+            {
                 loadingPanel.Visible = false;
             });
         }
@@ -702,7 +685,8 @@ namespace MediaOrganiser
         {
             Debug.WriteLine($"Document viewer error: {message}");
 
-            SafeInvokeOnUIThread(() => {
+            SafeInvokeOnUIThread(() =>
+            {
                 pdfPanel.Visible = false;
                 pdfNavigationPanel.Visible = false;
                 loadingPanel.Visible = false;
@@ -711,52 +695,57 @@ namespace MediaOrganiser
                 txtDocumentContent.Visible = true;
             });
         }
-
         /// <summary>
         /// Resets all viewers to hidden state
         /// </summary>
-        void ResetViewers()
-        {
-            SafeInvokeOnUIThread(() => {
-                // Hide existing viewers
-                txtDocumentContent.Visible = false;
-                txtDocumentContent.Text = string.Empty;
-                rtfDocumentContent.Visible = false;
-                rtfDocumentContent.Clear();
-                pdfPanel.Visible = false;
-                pdfNavigationPanel.Visible = false;
-
-                // Clear the PDF PictureBox without disposing the image
-                if (pdfPictureBox.Image != null)
+        void ResetViewers() =>
+            SafeInvokeOnUIThread(() =>
+            {
+                Try.lift(() =>
                 {
-                    pdfPictureBox.Image = null;
-                }
+                    // Hide existing viewers
+                    txtDocumentContent.Visible = false;
+                    txtDocumentContent.Text = string.Empty;
+                    rtfDocumentContent.Visible = false;
+                    rtfDocumentContent.Clear();
+                    pdfPanel.Visible = false;
+                    pdfNavigationPanel.Visible = false;
 
-                loadingPanel.Visible = false;
-
-                // Remove any additional panels that might have been added
-                for (int i = Controls.Count - 1; i >= 0; i--)
-                {
-                    Control control = Controls[i];
-                    if (control != txtDocumentContent &&
-                        control != rtfDocumentContent &&
-                        control != pdfPanel &&
-                        control != loadingPanel &&
-                        control != pdfNavigationPanel)
+                    // Clear the PDF PictureBox without disposing the image
+                    if (pdfPictureBox.Image != null)
                     {
-                        Controls.RemoveAt(i);
-                        control.Dispose();
+                        pdfPictureBox.Image = null;
                     }
-                }
+
+                    loadingPanel.Visible = false;
+
+                    // Remove any additional panels that might have been added
+                    for (int i = Controls.Count - 1; i >= 0; i--)
+                    {
+                        Control control = Controls[i];
+                        if (control != txtDocumentContent &&
+                            control != rtfDocumentContent &&
+                            control != pdfPanel &&
+                            control != loadingPanel &&
+                            control != pdfNavigationPanel)
+                        {
+                            Controls.RemoveAt(i);
+                            control.Dispose();
+                        }
+                    }
+                    return unit;
+                }).IfFail(ex =>
+                {
+                    Debug.WriteLine($"Error resetting viewers: {ex.Message}");
+                    return unit;
+                });
             });
-        }
 
         /// <summary>
         /// Clean up PDF resources
         /// </summary>
-        private void CleanupPdfResources()
-        {
-            try
+        private Unit CleanupPdfResources() =>
+            Try.lift(() =>
             {
                 // Clean up PDF page images
                 if (pdfPageImages != null)
@@ -775,26 +764,27 @@ namespace MediaOrganiser
                 // Delete temporary PDF if it exists
                 if (!string.IsNullOrEmpty(tempPdfPath) && File.Exists(tempPdfPath))
                 {
-                    try
+                    Try.lift(() =>
                     {
                         File.Delete(tempPdfPath);
                         tempPdfPath = null;
-                    }
-                    catch (Exception ex)
+                        return unit;
+                    }).IfFail(ex =>
                     {
                         Debug.WriteLine($"Error deleting temporary PDF: {ex.Message}");
-                    }
+                        return unit;
+                    });
                 }
 
                 // Reset page counters
                 currentPdfPage = 0;
                 totalPdfPages = 0;
-            }
-            catch (Exception ex)
+                return unit;
+            }).IfFail(ex =>
             {
                 Debug.WriteLine($"Error cleaning up PDF resources: {ex.Message}");
-            }
-        }
+                return unit;
+            });
 
         /// <summary>
         /// Clean up resources
@@ -803,7 +793,7 @@ namespace MediaOrganiser
         {
             if (disposing)
             {
-                try
+                Try.lift(() =>
                 {
                     Debug.WriteLine("Disposing DocumentViewerControl");
 
@@ -829,11 +819,12 @@ namespace MediaOrganiser
                     btnPrevPage?.Dispose();
                     btnNextPage?.Dispose();
                     lblPageInfo?.Dispose();
-                }
-                catch (Exception ex)
+                    return unit;
+                }).IfFail(ex =>
                 {
                     Debug.WriteLine($"Error disposing document viewer: {ex.Message}");
-                }
+                    return unit;
+                });
             }
 
             base.Dispose(disposing);

@@ -242,14 +242,14 @@ namespace MusicTools.Logic
 
             if (!oldState.Equals(newState))
             {
-                try
+                Try.lift(() =>
                 {
                     StateChanged?.Invoke(null, newState);
-                }
-                catch (Exception ex)
+                }).IfFail(ex =>
                 {
                     Debug.WriteLine($"Error in state change notification: {ex.Message}");
-                }
+                    return unit;
+                });
             }
         }
     }
