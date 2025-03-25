@@ -70,11 +70,5 @@ namespace MediaOrganiser.Services
                 return e.ToError();
             }
         }
-
-        /// <summary>
-        /// Counts files marked for deletion
-        /// </summary>
-        public int CountFilesForDeletion() =>
-            ObservableState.Current.Files.Values.Count(f => f.State == FileState.Bin);
     }
 }

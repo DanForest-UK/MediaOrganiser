@@ -561,7 +561,7 @@ namespace MediaOrganiser
                 return;
             }
 
-            var binCount = mediaService.CountFilesForDeletion();
+            var binCount = ObservableState.Current.CountFilesForDeletion();
             var keepCount = fileCount - binCount;
             var copyOnly = ObservableState.Current.CopyOnly;
 

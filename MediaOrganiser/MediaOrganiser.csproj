@@ -17,8 +17,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\SortPhotos.Core\SortPhotos.Core.csproj" />
-		<ProjectReference Include="..\SortPhotos.Logic\SortPhotos.Logic.csproj" />
+	  <ProjectReference Include="..\MediaOrganiser.Core\MediaOrganiser.Core.csproj" />
+	  <ProjectReference Include="..\MediaOrganiser.Logic\MediaOrganiser.Logic.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

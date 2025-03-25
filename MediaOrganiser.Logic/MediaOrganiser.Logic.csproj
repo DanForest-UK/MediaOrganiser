@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SortPhotos.Core\SortPhotos.Core.csproj" />
+    <ProjectReference Include="..\MediaOrganiser.Core\MediaOrganiser.Core.csproj" />
   </ItemGroup>
 
 </Project>
