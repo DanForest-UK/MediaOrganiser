@@ -83,9 +83,11 @@ namespace MediaOrganiser.Core
 
         public const int DisplayErrorCode = 303;
 
-        public static Error DisplayError(string message, Error inner) =>
-            Error.New(DisplayErrorCode, message, inner);
-
+        public static Error DisplayError(string message, Option<Error> inner) =>
+            inner.Match(
+                Some: inn => Error.New(DisplayErrorCode, message, inn),
+                None: () => Error.New(DisplayErrorCode, message));
+     
         public static Error ThereWasAProblem(Error inner) =>
             DisplayError("There was a problem", inner);
 
@@ -101,7 +103,7 @@ namespace MediaOrganiser.Core
         public static Error UnauthorisedAccess(string location, Error inner) =>
             DisplayError($"You do not have sufficient privalages for: {location}", inner);
 
-        public static Error FileNotFound(string path, Error inner) =>
+        public static Error FileNotFound(string path, Option<Error> inner) =>
             DisplayError($"File not found: {path}", inner);
 
         public static Error DirectoryNotFound(string path, Error inner) =>

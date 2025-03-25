@@ -36,21 +36,26 @@ namespace MediaOrganiser.Core
         /// Wraps IO operation with safe error handling
         /// </summary>
         public static IO<A> Safe<A>(this IO<A> ma) =>
-            ma | @catch(e => IO.fail<A>(AppErrors.ThereWasAProblem(e)));
+            ma | @catch(e => IO.fail<A>(ThereWasAProblem(e)));
 
+        // Handling for expected exceptions
         public static IO<A> HandleUnauthorised<A>(this IO<A> ma, string path) =>
-            ma | @catch(e => e.HasException<UnauthorizedAccessException>(), e => IO.fail<A>(AppErrors.UnauthorisedAccess(path, e)));
+            ma | @catch(e => e.HasException<UnauthorizedAccessException>(), e => IO.fail<A>(UnauthorisedAccess(path, e)));
 
         public static IO<A> HandleFileNotFound<A>(this IO<A> ma, string path) =>
-            ma | @catch(e => e.HasException<FileNotFoundException>(), e => IO.fail<A>(AppErrors.FileNotFound(path, e)));
+            ma | @catch(e => e.HasException<FileNotFoundException>(), e => IO.fail<A>(FileNotFound(path, e)));
 
         public static IO<A> HandleDirectoryNotFound<A>(this IO<A> ma, string path) =>
-         ma | @catch(e => e.HasException<DirectoryNotFoundException>(), e => IO.fail<A>(AppErrors.DirectoryNotFound(path, e)));
+         ma | @catch(e => e.HasException<DirectoryNotFoundException>(), e => IO.fail<A>(DirectoryNotFound(path, e)));
 
+        /// <summary>
+        /// Separates a collection of IO operations into the successes and the user errors
+        /// Unexpected errors are put as fails into the monad and expected are returned as a simple error type for the user
+        /// </summary>
         public static IO<(Seq<A> Succs, Seq<UserError> UserErrors)> ExtractUserErrors<A>(this Seq<IO<A>> items) =>
             from infos in items.Partition()
             let separatedErrors = infos.Fails.SeparateUserErrors()
-            from _ in separatedErrors.Unexpected.Traverse(IO.fail<A>)
+            from _ in separatedErrors.Unexpected.Traverse(IO.fail<A>) // Traverse prevents early-out on any item in collection having an error
             select (infos.Succs, separatedErrors.User);     
     }
 }

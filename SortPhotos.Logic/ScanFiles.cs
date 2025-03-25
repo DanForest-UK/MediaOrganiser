@@ -20,6 +20,11 @@ namespace MediaOrganiser.Logic
         static readonly Seq<string> VideoExtensions = [".mp4", ".avi", ".mov", ".wmv", ".mkv", ".flv", ".webm"];
         static readonly Seq<string> DocumentExtensions = [".pdf", ".docx", ".doc", ".txt", ".rtf"];
 
+        /// <summary>
+        /// Scans filder and gets list of file info
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
         public static IO<FileResponse> DoScanFiles(string path) =>
              (from extensions in IO.pure(ImageExtensions.Concat(VideoExtensions).Concat(DocumentExtensions))
               from getFilesResult in extensions.Map(ext => GetFilesWithExtension(path, ext))
@@ -32,6 +37,10 @@ namespace MediaOrganiser.Logic
                   UserErrors: getFileInfoResult.UserErrors.Concat(getFilesResult.UserErrors),
                   Files: getFileInfoResult.Succs)).Safe();
 
+
+        /// <summary>
+        /// Get all files in a directory with a given extension
+        /// </summary>
         static IO<Seq<string>> GetFilesWithExtension(string path, string extension) =>
             IO.lift(env => toSeq(Directory.GetFiles(path, $"*{extension}", SearchOption.AllDirectories)))
                 .HandleUnauthorised(path)
@@ -41,30 +50,31 @@ namespace MediaOrganiser.Logic
         /// Adds file info for a file to the collection
         /// </summary>
         static IO<MediaInfo> CreateFileInfoAsync(string path) =>
-            IO.lift(env =>
-            {
-                var fileInfo = new FileInfo(path);
-                if (!fileInfo.Exists) IO.fail<MediaInfo>(Error.New("File no longer exists"));
+            (from fileInfo in IO.lift(() => new FileInfo(path))
+            from mediaInfo in fileInfo.Exists
+                ? IO.lift(env =>
+                {
+                    var filename = Path.GetFileNameWithoutExtension(path);
+                    var extension = Path.GetExtension(path).ToLower();
 
-                var filename = Path.GetFileNameWithoutExtension(path);
-                var extension = Path.GetExtension(path).ToLower();
-
-                return new MediaInfo(
-                    new FileId(Guid.NewGuid().GetHashCode()),
-                    new FileName(filename),
-                    new FullPath(path),
-                    new Extension(extension),
-                    new Size(fileInfo.Length),
-                    new Date(fileInfo.LastWriteTime), // todo take earliest of all dates
-                    Enumerable.Contains(ImageExtensions, extension)
-                        ? FileCategory.Image
-                        : Enumerable.Contains(VideoExtensions, extension)
-                            ? FileCategory.Video
-                            : Enumerable.Contains(DocumentExtensions, extension)
-                                ? FileCategory.Document
-                                : FileCategory.Unknown,
-                    FileState.Undecided);
-            }).HandleUnauthorised(path)
+                    return new MediaInfo(
+                        new FileId(Guid.NewGuid().GetHashCode()),
+                        new FileName(filename),
+                        new FullPath(path),
+                        new Extension(extension),
+                        new Size(fileInfo.Length),
+                        new Date(fileInfo.LastWriteTime), // todo take earliest of all dates
+                        Enumerable.Contains(ImageExtensions, extension)
+                            ? FileCategory.Image
+                            : Enumerable.Contains(VideoExtensions, extension)
+                                ? FileCategory.Video
+                                : Enumerable.Contains(DocumentExtensions, extension)
+                                    ? FileCategory.Document
+                                    : FileCategory.Unknown,
+                        FileState.Undecided);
+                })
+               : IO.fail<MediaInfo>(AppErrors.FileNotFound(path, None))
+            select mediaInfo).HandleUnauthorised(path)
             | @catch(e => IO.fail<MediaInfo>(AppErrors.ReadFileError(path, e)));
     }
 }

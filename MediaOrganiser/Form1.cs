@@ -778,10 +778,19 @@ namespace MediaOrganiser
                         UpdateStatus($"Media organised.");
 
                         if (organiseResponse.UserErrors.Length > 0)
+                        {
                             ErrorListForm.ShowErrors(
                                 this,
                                 "Organise Warnings",
                                 organiseResponse.UserErrors);
+                        }
+                        else
+                        {
+                            // Only clear state if complete success
+                            ObservableState.ClearFiles();
+                            StateSerialiser.DeleteState();
+                            ShowMessageBox("Organise complete", "Finished", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        }
                     },
                     Left: OnError);
 
@@ -792,10 +801,7 @@ namespace MediaOrganiser
             }
             finally
             {
-                ObservableState.SetWorkInProgress(false);
-                ObservableState.ClearFiles();
-                StateSerialiser.DeleteState();
-                ShowMessageBox("Organise complete!", "Finished", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ObservableState.SetWorkInProgress(false);                
             }
         }
 
