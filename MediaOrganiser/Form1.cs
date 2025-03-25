@@ -1,7 +1,6 @@
 using LanguageExt;
 using LanguageExt.Common;
 using MediaOrganiser.Services;
-using MusicTools.Logic;
 using MediaOrganiser.Core;
 using System.Diagnostics;
 using System.IO;
@@ -10,6 +9,7 @@ using static MediaOrganiser.Core.Types;
 using static LanguageExt.Prelude;
 using D = System.Drawing;
 using System.Xml;
+using MediaOrganiser.Logic;
 
 namespace MediaOrganiser
 {

@@ -4,14 +4,11 @@ using System.Linq;
 using static LanguageExt.Prelude;
 using G = System.Collections.Generic;
 using System.Diagnostics;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Collections.Concurrent;
-using static MediaOrganiser.Core.Types;
 using MediaOrganiser.Core;
+using static MediaOrganiser.Core.Types;
 using LanguageExt.Core;
 
-namespace MusicTools.Logic
+namespace MediaOrganiser.Logic
 {
     /// <summary>
     /// Manages application state using an immutable Atom container
@@ -39,29 +36,8 @@ namespace MusicTools.Logic
         /// <summary>
         /// Sets the files in the application state
         /// </summary>
-        public static void SetFiles(Seq<MediaInfo> files)
-        {
-            // Set file ID by order
-            files = toSeq(files.Where(s => s.Category != FileCategory.Unknown).Select((s, i) => s with { Id = new FileId(i + 1) }));
-
-            var fileMap = (from f in files
-                           select (f.Id, f)).ToMap();
-
-            var newState = stateAtom.Value with
-            {
-                Files = fileMap,
-                CurrentFile = files.Length > 0
-                    ? files.First().Id
-                    : None
-            };
-
-            // Set current file to the first image if there are any
-            var firstImage = files.FirstOrDefault(f => f.Category == FileCategory.Image);
-            if (firstImage != null && newState.CurrentFile.IsNone)
-                newState = newState with { CurrentFile = Option<FileId>.Some(firstImage.Id) };
-
-            Update(newState);
-        }
+        public static void SetFiles(Seq<MediaInfo> files) =>
+            Update(Current.AddFiles(files));
 
         /// <summary>
         /// Sets the work in progress state
@@ -99,138 +75,52 @@ namespace MusicTools.Logic
         public static void SetCurrentFile(FileId fileId) =>
             Update(stateAtom.Value with { CurrentFile = Some(fileId) });
 
-
         /// <summary>
         /// Move to the next file in the collection
         /// </summary>
-        public static void NextFile()
-        {
-            var current = stateAtom.Value;
-            current.CurrentFile.IfSome(currentId =>
-            {
-                // Get ordered keys
-                var keys = current.Files.Keys.OrderBy(k => k.Value).ToList();
-                var index = keys.FindIndex(k => k.Value == currentId.Value);
-
-                if (index >= 0 && index < keys.Count - 1)
-                    SetCurrentFile(keys[index + 1]);
-            });
-        }
+        public static void NextFile() =>
+            Update(Current.MoveToNextFile());
 
         /// <summary>
         /// Rotates the current image
         /// </summary>
-        public static void RotateCurrentImage(Rotation direction)
-        {
-            var current = stateAtom.Value;
-            current.CurrentFile.IfSome(currentId =>
-            {
-                // Get the file and update its rotation
-                if (current.Files.ContainsKey(currentId))
-                {
-                    var file = current.Files[currentId];
-
-                    // Calculate new rotation
-                    Rotation newRotation = file.Rotation;
-                    if (direction == Rotation.Rotate90)
-                    {
-                        newRotation = (Rotation)(((int)file.Rotation + 90) % 360);
-                    }
-                    else if (direction == Rotation.Rotate270)
-                    {
-                        newRotation = (Rotation)(((int)file.Rotation + 270) % 360);
-                    }
-
-                    var updatedFile = file with { Rotation = newRotation };
-
-                    // Update the state atomically
-                    Update(current with
-                    {
-                        Files = current.Files.AddOrUpdate(currentId, updatedFile)
-                    });
-                }
-            });
-        }
+        public static void RotateCurrentImage(Rotation direction) =>
+            Update(Current.RotateCurrentImage(direction));
 
         /// <summary>
-        /// Rotates the current image
+        /// Updates the filename of the current file
         /// </summary>
-        public static void UpdateFilename(string newFilename)
-        {
-            var current = stateAtom.Value;
-            current.CurrentFile.IfSome(currentId =>
-            {
-                // Get the file and update its rotation
-                if (current.Files.ContainsKey(currentId))
-                {
-                    var file = current.Files[currentId];
-
-                    var updatedFile = file with { FileName = new FileName(newFilename) };
-
-                    // Update the state atomically
-                    Update(current with
-                    {
-                        Files = current.Files.AddOrUpdate(currentId, updatedFile)
-                    });
-                }
-            });
-        }
+        public static void UpdateFilename(string newFilename) =>
+            Update(Current.UpdateFilename(newFilename));
 
         /// <summary>
         /// Move to the previous file in the collection
         /// </summary>
-        public static void PreviousFile()
-        {
-            var current = stateAtom.Value;
-            current.CurrentFile.IfSome(currentId =>
-            {
-                // Get ordered keys
-                var keys = current.Files.Keys.OrderBy(k => k.Value).ToList();
-                var index = keys.FindIndex(k => k.Value == currentId.Value);
-
-                if (index > 0)
-                    SetCurrentFile(keys[index - 1]);
-            });
-        }
+        public static void PreviousFile() =>
+            Update(Current.MoveToPreviousFile());
 
         /// <summary>
         /// Update file state and optionally move to next file
         /// </summary>
         public static void UpdateFileState(FileState state, bool moveToNext = true)
         {
-            var current = stateAtom.Value;
-            current.CurrentFile.IfSome(currentId =>
-            {
-                // Get the file and update its state
-                if (current.Files.ContainsKey(currentId))
-                {
-                    var file = current.Files[currentId];
-                    var updatedFile = file with { State = state };
+            var newState = Current.UpdateFileState(state);
+            Update(newState);
 
-                    // Update the state atomically
-                    Update(current with
-                    {
-                        Files = current.Files.AddOrUpdate(currentId, updatedFile)
-                    });
-
-                    // Move to next file if requested
-                    if (moveToNext)
-                        NextFile();
-                }
-            });
+            // Move to next file if requested
+            if (moveToNext)
+                NextFile();
         }
 
         /// <summary>
         /// Clears all files from the application state
         /// </summary>
-        public static void ClearFiles()
-        {
+        public static void ClearFiles() =>
             Update(stateAtom.Value with
             {
                 Files = new Map<FileId, MediaInfo>(),
                 CurrentFile = None
             });
-        }
 
         /// <summary>
         /// Updates the entire application state atomically

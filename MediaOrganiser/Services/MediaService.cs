@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using static MediaOrganiser.Core.Types;
 using static LanguageExt.Prelude;
 using LanguageExt.Common;
-using MusicTools.Logic;
 
 namespace MediaOrganiser.Services
 {
