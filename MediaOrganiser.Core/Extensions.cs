@@ -42,6 +42,14 @@ namespace MediaOrganiser.Core
         public static IO<A> HandleUnauthorised<A>(this IO<A> ma, string path) =>
             ma | @catch(e => e.HasException<UnauthorizedAccessException>(), e => IO.fail<A>(UnauthorisedAccess(path, e)));
 
+        public static IO<A> HandleEmptyPath<A>(this IO<A> ma) =>
+            ma | @catch(e => e.HasException<ArgumentException>() && e.Message.Contains("path is empty"), 
+                e => IO.fail<A>(PathIsEmpty(e)));
+
+        public static IO<A> HandleInvalidDirectory<A>(this IO<A> ma, string path) =>
+            ma | @catch(e => e.HasException<IOException>() && e.Message.Contains("The filename, directory name, or volume label syntax is incorrect"),
+                e => IO.fail<A>(DirectoryInvalid(e, path)));
+
         public static IO<A> HandleFileNotFound<A>(this IO<A> ma, string path) =>
             ma | @catch(e => e.HasException<FileNotFoundException>(), e => IO.fail<A>(FileNotFound(path, e)));
 

@@ -1,5 +1,6 @@
 using LanguageExt;
 using MediaOrganiser.Logic;
+using System.IO;
 using static MediaOrganiser.Core.Types;
 
 namespace MediaOrganiser
@@ -25,6 +26,8 @@ namespace MediaOrganiser
 
             // Setup dependency for rotating image in a windows app
             Runtime.RotateImageAndSave = Windows.RotateImageAndSave;
+
+            StateSerialiser.StateFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appstate.json"); 
 
             Application.Run(new Form1());
         }

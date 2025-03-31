@@ -6,6 +6,7 @@ using LanguageExt.ClassInstances;
 using LanguageExt.Common;
 using static LanguageExt.Prelude;
 using static MediaOrganiser.Core.AppErrors;
+using static MediaOrganiser.Core.AppErrors.ErrorMessages;
 
 namespace MediaOrganiser.Core
 {
@@ -73,56 +74,84 @@ namespace MediaOrganiser.Core
         }
 
         public record FileResponse(Seq<UserError> UserErrors, Seq<MediaInfo> Files);
-        public record OrganiseResponse(Seq<UserError> UserErrors, bool success);
+        public record OrganiseResponse(Seq<UserError> UserErrors, bool Success);
     }
 
     public static class AppErrors
     {
         // Type to distinguish expected errors from unexpected errors
-        public record UserError(string message);
+        public record UserError(string Message);
 
         public const int DisplayErrorCode = 303;
+
+        /// <summary>
+        /// Common error message strings
+        /// </summary>
+        public static class ErrorMessages
+        {
+            public const string ThereWasAProblem = "There was a problem";
+            public const string FileSystemAccessNeeded = "File access needs to be granted for this app in Privacy & Security -> File system";
+            public const string AccessToPathDeniedPrefix = "Access to:";
+            public const string ErrorGettingFilesPrefix = "Error getting files type:";
+            public const string UnauthorisedAccessPrefix = "You do not have sufficient privalages for:";
+            public const string FileNotFoundPrefix = "File not found:";
+            public const string DirectoryNotFoundPrefix = "Directory not found:";
+            public const string ErrorReadingFilePrefix = "Error reading file:";
+            public const string UnableToMovePrefix = "Unable to move/copy file:";
+            public const string UnableToDeletePrefix = "Unable to delete file";
+            public const string UnableToRotateSuffix = ", it was copied in its original orientation";
+            public const string UnableToRotatePrefix = "Unable to rotate file";
+            public const string UnableToCreateDirectoryPrefix = "Unable to create directory";
+            public const string PathIsEmpty = "Path is empty";
+            public const string DirectoryInvalidPrefix = "Directory is invalid:";
+        }
 
         public static Error DisplayError(string message, Option<Error> inner) =>
             inner.Match(
                 Some: inn => Error.New(DisplayErrorCode, message, inn),
                 None: () => Error.New(DisplayErrorCode, message));
-     
+
         public static Error ThereWasAProblem(Error inner) =>
-            DisplayError("There was a problem", inner);
+            DisplayError(ErrorMessages.ThereWasAProblem, inner);
 
         public static Error NeedFileSystemAccess(Error inner) =>
-            DisplayError("File access needs to be granted for this app in Privacy & Security -> File system", inner);
+            DisplayError(FileSystemAccessNeeded, inner);
 
         public static Error AccessToPathDenied(string path, Error inner) =>
-            DisplayError($"Access to: {path} is denied", inner);
+            DisplayError($"{AccessToPathDeniedPrefix} {path} is denied", inner);
+
+        public static Error PathIsEmpty(Error inner) =>
+           DisplayError(ErrorMessages.PathIsEmpty, inner);
+
+        public static Error DirectoryInvalid(Error inner, string path) =>
+            DisplayError($"{DirectoryInvalidPrefix} {path}", inner);
 
         public static Error GetFilesError(string extension, Error inner) =>
-            DisplayError($"Error getting files type: {extension}", inner);
+            DisplayError($"{ErrorGettingFilesPrefix} {extension}", inner);
 
         public static Error UnauthorisedAccess(string location, Error inner) =>
-            DisplayError($"You do not have sufficient privalages for: {location}", inner);
+            DisplayError($"{UnauthorisedAccessPrefix} {location}", inner);
 
         public static Error FileNotFound(string path, Option<Error> inner) =>
-            DisplayError($"File not found: {path}", inner);
+            DisplayError($"{FileNotFoundPrefix} {path}", inner);
 
         public static Error DirectoryNotFound(string path, Error inner) =>
-            DisplayError($"Directory not found: {path}", inner);
+            DisplayError($"{DirectoryNotFoundPrefix} {path}", inner);
 
         public static Error ReadFileError(string filename, Error inner) =>
-            DisplayError($"Error reading file: {filename}", inner);
+            DisplayError($"{ErrorReadingFilePrefix} {filename}", inner);
 
         public static Error UnableToMove(string path, Error inner) =>
-            DisplayError($"Unable to move/copy file: {path}", inner);
+            DisplayError($"{UnableToMovePrefix} {path}", inner);
 
         public static Error UnableToDelete(string fileName, Error inner) =>
-            DisplayError($"Unable to delete file {fileName}", inner);
+            DisplayError($"{UnableToDeletePrefix} {fileName}", inner);
 
         public static Error UnableToRotate(string fileName, Error inner) =>
-           DisplayError($"Unable to rotate file {fileName}, it was copied in its original orientation", inner);
+           DisplayError($"{UnableToRotatePrefix} {fileName}{UnableToRotateSuffix}", inner);
 
         public static Error UnableToCreateDirectory(string directory, Error inner) =>
-           DisplayError($"Unable to create directory {directory}", inner);
+           DisplayError($"{UnableToCreateDirectoryPrefix} {directory}", inner);
 
         public static (Seq<UserError> User, Seq<Error> Unexpected) SeparateUserErrors(this Seq<Error> allErrors)
         {

@@ -14,8 +14,10 @@ namespace MediaOrganiser
     /// <summary>
     /// Handles serialization and deserialization of application state
     /// </summary>
-    public static class StateSerialiser
+    public static class StateSerialiser 
     {
+        public static string StateFilePath = "";
+        
         /// <summary>
         /// A serializable version of the application state
         /// </summary>
@@ -27,19 +29,11 @@ namespace MediaOrganiser
             bool SortByYear,
             bool KeepParentFolder);
 
-        const string StateFileName = "appstate.json";
-
         static readonly JsonSerializerOptions SerializerOptions = new()
         {
             WriteIndented = true,
         };
-
-        /// <summary>
-        /// Gets the full path to the state file in the application directory
-        /// </summary>
-        public static string GetStateFilePath() =>
-            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, StateFileName);
-
+             
         /// <summary>
         /// Serializes the current application state to disk
         /// </summary>
@@ -51,7 +45,7 @@ namespace MediaOrganiser
                     // Create a serializable version of the state
                     var serializableState = state.ToSerializableAppModel();
                     var json = JsonSerializer.Serialize(serializableState, SerializerOptions);
-                    File.WriteAllText(GetStateFilePath(), json);
+                    File.WriteAllText(StateFilePath, json);
                 }
                 return unit;
             }).IfFail(ex =>
@@ -66,11 +60,10 @@ namespace MediaOrganiser
         public static Option<AppModel> LoadState() =>
             Try.lift(() =>
             {
-                var statePath = GetStateFilePath();
-                if (!File.Exists(statePath))
+                if (!File.Exists(StateFilePath))
                     return None;
 
-                return Optional(JsonSerializer.Deserialize<SerialisableAppModel>(File.ReadAllText(statePath), SerializerOptions))
+                return Optional(JsonSerializer.Deserialize<SerialisableAppModel>(File.ReadAllText(StateFilePath), SerializerOptions))
                     .Map(state =>
                     {
                         // Filter out any file we can't find or have an error trying to find
@@ -124,7 +117,7 @@ namespace MediaOrganiser
         public static void DeleteState() =>
             Try.lift(() =>
             {
-                var statePath = GetStateFilePath();
+                var statePath = StateFilePath;
                 if (File.Exists(statePath))
                     File.Delete(statePath);
                 return unit;

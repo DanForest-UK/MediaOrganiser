@@ -37,7 +37,7 @@ namespace MediaOrganiser.Logic
         /// Sets the files in the application state
         /// </summary>
         public static void SetFiles(Seq<MediaInfo> files) =>
-            Update(Current.AddFiles(files));
+            Update(Current.SetFiles(files));
 
         /// <summary>
         /// Sets the work in progress state
@@ -70,12 +70,6 @@ namespace MediaOrganiser.Logic
             Update(stateAtom.Value with { KeepParentFolder = new KeepParentFolder(keepParentFolder) });
 
         /// <summary>
-        /// Sets the current file to display
-        /// </summary>
-        public static void SetCurrentFile(FileId fileId) =>
-            Update(stateAtom.Value with { CurrentFile = Some(fileId) });
-
-        /// <summary>
         /// Move to the next file in the collection
         /// </summary>
         public static void NextFile() =>
@@ -100,18 +94,11 @@ namespace MediaOrganiser.Logic
             Update(Current.MoveToPreviousFile());
 
         /// <summary>
-        /// Update file state and optionally move to next file
+        /// Update file state
         /// </summary>
-        public static void UpdateFileState(FileState state, bool moveToNext = true)
-        {
-            var newState = Current.UpdateFileState(state);
-            Update(newState);
-
-            // Move to next file if requested
-            if (moveToNext)
-                NextFile();
-        }
-
+        public static void UpdateFileState(FileState state) =>
+            Update(Current.UpdateFileState(state));
+    
         /// <summary>
         /// Clears all files from the application state
         /// </summary>

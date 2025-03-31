@@ -25,7 +25,7 @@ namespace MediaOrganiser
 
             // Add errors to listbox
             foreach (var error in errors)
-                listErrors.Items.Add(error.message);
+                listErrors.Items.Add(error.Message);
 
             // Apply theme
             ThemeManager.ApplyTheme(this);

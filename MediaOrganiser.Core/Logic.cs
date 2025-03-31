@@ -14,7 +14,7 @@ namespace MediaOrganiser.Core
         /// <summary>
         /// Add new set of files into an app model
         /// </summary>
-        public static AppModel AddFiles(this AppModel model, Seq<MediaInfo> files)
+        public static AppModel SetFiles(this AppModel model, Seq<MediaInfo> files)
         {
             // Filter and assign IDs
             files = toSeq(files.Where(s => s.Category != FileCategory.Unknown)

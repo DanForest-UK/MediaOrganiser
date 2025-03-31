@@ -44,7 +44,10 @@ namespace MediaOrganiser.Logic
         static IO<Seq<string>> GetFilesWithExtension(string path, string extension) =>
             IO.lift(env => toSeq(Directory.GetFiles(path, $"*{extension}", SearchOption.AllDirectories)))
                 .HandleUnauthorised(path)
-                | @catch(e => IO.fail<Seq<string>>(AppErrors.GetFilesError(extension, e)));
+                .HandleEmptyPath()
+                .HandleInvalidDirectory(path)
+                .HandleDirectoryNotFound(path)
+                | @catch(e => e.Inner.IsEmpty(), error => IO.fail<Seq<string>>(AppErrors.GetFilesError(extension, error)));
 
         /// <summary>
         /// Adds file info for a file to the collection

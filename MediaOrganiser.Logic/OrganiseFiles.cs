@@ -105,21 +105,21 @@ namespace MediaOrganiser.Logic
                      : CopyFile(file.FullPath.Value, targetPath)
                  from _1 in IO.lift(() =>
                  {
-                     if (!copyOnly.Value)                    
-                         File.Delete(file.FullPath.Value);                     
-                 })                
+                     if (!copyOnly.Value)
+                         File.Delete(file.FullPath.Value);
+                 })
                  select unit)
                 .HandleUnauthorised(file.FullPath.Value)
                 .HandleFileNotFound(file.FullPath.Value)
                 .HandleDirectoryNotFound(file.FullPath.Value)
-                | @catch(err => IO.fail<Unit>(UnableToMove(file.FullPath.Value, err)));
+                | @catch(err => err.Inner.IsNone, error => IO.fail<Unit>(UnableToMove(file.FullPath.Value, error)));
 
         /// <summary>
         /// Normal copy for files that do not need rotating
         /// </summary>
         static IO<Unit> CopyFile(string path, string targetPath) =>
             IO.lift(() => File.Copy(path, targetPath, true));
- 
+
         // Make sure no filename clashes
         static IO<string> GetUniquePath(MediaInfo file, string targetDir) =>
             IO.lift(() =>
