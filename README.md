@@ -22,7 +22,6 @@ Media Organiser is a Windows desktop application designed to help you organize y
 
 - Windows 10 or later
 - .NET 9.0 or higher
-- 4GB RAM (recommended)
 - Sufficient disk space for file operations
 
 ## Getting Started
