@@ -1,9 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using MediaOrganiser.Core;
-using static MediaOrganiser.Core.Types;
 using LanguageExt;
 using static LanguageExt.Prelude;
-using System.Linq;
+using MediaOrganiser.Domain;
 
 namespace MediaOrganiser.Tests.Core
 {

@@ -1,13 +1,8 @@
 ﻿using System.Text.Json;
-using System.Text.Json.Serialization;
 using LanguageExt;
-using static MediaOrganiser.Core.Types;
 using static LanguageExt.Prelude;
-using System.IO;
-using System.Runtime.CompilerServices;
-using MediaOrganiser.Core;
-using LanguageExt.Core;
 using System.Diagnostics;
+using MediaOrganiser.Domain;
 
 namespace MediaOrganiser
 {

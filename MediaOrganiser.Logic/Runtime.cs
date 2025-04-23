@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using LanguageExt;
-using static MediaOrganiser.Core.Types;
+﻿using LanguageExt;
+using MediaOrganiser.Domain;
 
 namespace MediaOrganiser.Logic
 {

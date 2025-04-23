@@ -1,14 +1,10 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using MediaOrganiser.Core;
-using static MediaOrganiser.Core.Types;
 using LanguageExt;
 using static LanguageExt.Prelude;
-using System.Collections.Generic;
-using System.Linq;
-using System.IO;
 using LanguageExt.Common;
-using System;
-using static MediaOrganiser.Core.AppErrors.ErrorMessages;
+using MediaOrganiser.Domain;
+using static MediaOrganiser.Domain.AppErrors;
+using static MediaOrganiser.Domain.ErrorMessages;
 
 namespace MediaOrganiser.Tests.Core
 {
@@ -66,7 +62,7 @@ namespace MediaOrganiser.Tests.Core
         /// </summary>
         [TestMethod]
         public void SafeGivesExpectedException() =>
-            TestIOException<InvalidOperationException, int>(io => io.Safe(), ThereWasAProblem);
+            TestIOException<InvalidOperationException, int>(io => io.Safe(), ErrorMessages.ThereWasAProblem);
 
         /// <summary>
         /// Tests that HandleUnauthorised correctly handles UnauthorizedAccessException
@@ -125,7 +121,7 @@ namespace MediaOrganiser.Tests.Core
         public void SeparateErrors()
         {
             var errors = toSeq(new Error[]{
-                    Error.New(AppErrors.DisplayErrorCode, "User error 1"),
+                    Error.New(UserError.DisplayErrorCode, "User error 1"),
                     Error.New("Non error 2")
                 });
 

@@ -1,7 +1,5 @@
-using LanguageExt;
 using MediaOrganiser.Logic;
 using System.IO;
-using static MediaOrganiser.Core.Types;
 
 namespace MediaOrganiser
 {

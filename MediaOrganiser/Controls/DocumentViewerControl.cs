@@ -1,16 +1,8 @@
 ﻿using LanguageExt;
-using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
-using System.Windows.Forms;
-using System.Threading;
-using System.Threading.Tasks;
-using IronPdf;
-using System.Collections.Generic;
-using System.Drawing;
 using Image = System.Drawing.Image;
-using static MediaOrganiser.Core.Types;
 using Color = System.Drawing.Color;
 using Point = System.Drawing.Point;
 using Size = System.Drawing.Size;

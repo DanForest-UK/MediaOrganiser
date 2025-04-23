@@ -1,13 +1,8 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MediaOrganiser.Logic;
-using MediaOrganiser.Core;
-using static MediaOrganiser.Core.Types;
-using LanguageExt;
 using static LanguageExt.Prelude;
-using System.IO;
-using System;
-using System.Linq;
 using System.Diagnostics;
+using MediaOrganiser.Domain;
 
 namespace MediaOrganiser.Tests.Logic
 {
@@ -148,7 +143,7 @@ namespace MediaOrganiser.Tests.Logic
         {
             // Arrange - Create two files with same name
             var sourcePath = Path.Combine(testSourceFolder, "image1.jpg");
- 
+
             // Same image twice - second should not overwrite first
             var imageFile1 = TestDataFactory.CreateMediaInfoFromFile(1, sourcePath, FileState.Keep);
             var imageFile2 = TestDataFactory.CreateMediaInfoFromFile(2, sourcePath, FileState.Keep);
@@ -232,12 +227,12 @@ namespace MediaOrganiser.Tests.Logic
 
             var result = OrganiseFiles.DoOrganiseFiles(files, testDestinationFolder, options.copyOnly, options.sortByYear, options.keepParentFolder).Run();
 
-            Assert.IsTrue(result.IsEmpty); 
+            Assert.IsTrue(result.IsEmpty);
 
             // File should be copied to destination in the Images/Subfolder folder
             Assert.IsTrue(File.Exists(Path.Combine(testDestinationFolder, "Images", subfolder, "subimage.jpg")));
         }
-              
+
         /// <summary>
         /// Tests that year sorting and parent folder preservation can be combined
         /// </summary>
@@ -351,13 +346,11 @@ namespace MediaOrganiser.Tests.Logic
         private (CopyOnly copyOnly, SortByYear sortByYear, KeepParentFolder keepParentFolder) CreateOrganizationOptions(
             bool copyOnly = true,
             bool sortByYear = false,
-            bool keepParentFolder = false)
-        {
-            return (
+            bool keepParentFolder = false) =>
+            (
                 new CopyOnly(copyOnly),
                 new SortByYear(sortByYear),
                 new KeepParentFolder(keepParentFolder)
             );
-        }
     }
 }

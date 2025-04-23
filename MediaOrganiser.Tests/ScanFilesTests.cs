@@ -1,16 +1,8 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using MediaOrganiser.Logic;
-using MediaOrganiser.Core;
-using static MediaOrganiser.Core.Types;
 using LanguageExt;
-using static LanguageExt.Prelude;
-using System.IO;
-using System.Linq;
 using System.Diagnostics;
-using System.Security.AccessControl;
-using System.Security.Principal;
 using System.Runtime.InteropServices;
-using static MediaOrganiser.Core.AppErrors;
+using MediaOrganiser.Domain;
 
 namespace MediaOrganiser.Tests.Logic
 {

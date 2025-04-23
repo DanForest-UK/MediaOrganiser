@@ -1,14 +1,8 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MediaOrganiser.Logic;
-using MediaOrganiser.Core;
-using static MediaOrganiser.Core.Types;
 using LanguageExt;
 using static LanguageExt.Prelude;
-using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Collections.Generic;
+using MediaOrganiser.Domain;
 
 namespace MediaOrganiser.Tests.Logic
 {
@@ -424,9 +418,8 @@ namespace MediaOrganiser.Tests.Logic
         /// <summary>
         /// Creates a new MediaInfo object with the specified properties for testing purposes.
         /// </summary>
-         private static MediaInfo CreateMediaInfo(int id, string filename, FileCategory category)
-        {
-            return new MediaInfo(
+         private static MediaInfo CreateMediaInfo(int id, string filename, FileCategory category) =>        
+            new MediaInfo(
                 new FileId(id),
                 new FileName(filename),
                 new FullPath($"C:\\test\\{filename}.jpg"),
@@ -434,7 +427,6 @@ namespace MediaOrganiser.Tests.Logic
                 new Size(1024),
                 new Date(DateTime.Now),
                 category,
-                FileState.Undecided);
-        }
+                FileState.Undecided);        
     }
 }

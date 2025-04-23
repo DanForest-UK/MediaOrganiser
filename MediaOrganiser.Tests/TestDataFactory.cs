@@ -1,9 +1,4 @@
-using System;
-using System.IO;
-using MediaOrganiser.Core;
-using static MediaOrganiser.Core.Types;
-using LanguageExt;
-using static LanguageExt.Prelude;
+using MediaOrganiser.Domain;
 
 namespace MediaOrganiser.Tests
 {

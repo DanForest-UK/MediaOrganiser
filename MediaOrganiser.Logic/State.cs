@@ -1,12 +1,7 @@
 ﻿using LanguageExt;
-using System;
-using System.Linq;
 using static LanguageExt.Prelude;
-using G = System.Collections.Generic;
 using System.Diagnostics;
-using MediaOrganiser.Core;
-using static MediaOrganiser.Core.Types;
-using LanguageExt.Core;
+using MediaOrganiser.Domain;
 
 namespace MediaOrganiser.Logic
 {

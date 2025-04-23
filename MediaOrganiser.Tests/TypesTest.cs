@@ -1,11 +1,5 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using MediaOrganiser.Core;
-using static MediaOrganiser.Core.Types;
-using LanguageExt;
-using static LanguageExt.Prelude;
-using System;
-using System.Linq;
-using static MediaOrganiser.Core.AppErrors;
+﻿using MediaOrganiser.Domain;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace MediaOrganiser.Tests.Core
 {

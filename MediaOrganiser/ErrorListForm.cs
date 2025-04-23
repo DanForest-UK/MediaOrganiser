@@ -1,8 +1,5 @@
 ﻿using LanguageExt;
-using System;
-using System.Collections.Generic;
-using System.Windows.Forms;
-using static MediaOrganiser.Core.AppErrors;
+using MediaOrganiser.Domain;
 
 namespace MediaOrganiser
 {

@@ -1,20 +1,25 @@
-﻿using LanguageExt;
-using System;
-using System.Linq;
-using static LanguageExt.Prelude;
-using static MediaOrganiser.Core.Types;
+﻿using static LanguageExt.Prelude;
+using LanguageExt;
 
-namespace MediaOrganiser.Core
+namespace MediaOrganiser.Domain
 {
-    public static class Logic
+    public record AppModel(
+                Map<FileId, MediaInfo> Files,
+                bool WorkInProgress,
+                Option<FolderPath> CurrentFolder,
+                Option<FileId> CurrentFile,
+                CopyOnly CopyOnly,
+                SortByYear SortByYear,
+                KeepParentFolder KeepParentFolder)
+
     {
-        public static int CountFilesForDeletion(this AppModel model) =>
-           model.Files.Values.Count(f => f.State == FileState.Bin);
+        public int CountFilesForDeletion() =>
+          Files.Values.Count(f => f.State == FileState.Bin);
 
         /// <summary>
         /// Add new set of files into an app model
         /// </summary>
-        public static AppModel SetFiles(this AppModel model, Seq<MediaInfo> files)
+        public AppModel SetFiles(Seq<MediaInfo> files)
         {
             // Filter and assign IDs
             files = toSeq(files.Where(s => s.Category != FileCategory.Unknown)
@@ -25,7 +30,7 @@ namespace MediaOrganiser.Core
                            select (f.Id, f)).ToMap();
 
             // Create initial state with files
-            var newState = model with
+            var newState = this with
             {
                 Files = fileMap,
                 CurrentFile = files.Length > 0
@@ -44,14 +49,13 @@ namespace MediaOrganiser.Core
         /// <summary>
         /// Rotate the current image
         /// </summary> 
-        public static AppModel RotateCurrentImage(this AppModel model, Rotation direction)
-        {
-            return model.CurrentFile.Match(
-                Some: currentId =>
+        public AppModel RotateCurrentImage(Rotation direction) =>
+            CurrentFile.Map(
+                currentId =>
                 {
-                    if (model.Files.ContainsKey(currentId))
+                    if (Files.ContainsKey(currentId))
                     {
-                        var file = model.Files[currentId];
+                        var file = Files[currentId];
 
                         // Calculate new rotation
                         Rotation newRotation = file.Rotation;
@@ -67,107 +71,93 @@ namespace MediaOrganiser.Core
                         var updatedFile = file with { Rotation = newRotation };
 
                         // Return updated state
-                        return model with
+                        return this with
                         {
-                            Files = model.Files.AddOrUpdate(currentId, updatedFile)
+                            Files = Files.AddOrUpdate(currentId, updatedFile)
                         };
                     }
-                    return model;
-                },
-                None: () => model
-            );
-        }
-
+                    return this;
+                }).IfNone(this);
+        
         /// <summary>
         /// Move to the next file
         /// </summary>
-        public static AppModel MoveToNextFile(this AppModel model)
+        public AppModel MoveToNextFile()
         {
-            return model.CurrentFile.Match(
+            return CurrentFile.Match(
                 Some: currentId =>
                 {
                     // Get ordered keys
-                    var keys = model.Files.Keys.OrderBy(k => k.Value).ToList();
+                    var keys = Files.Keys.OrderBy(k => k.Value).ToList();
                     var index = keys.FindIndex(k => k.Value == currentId.Value);
 
                     if (index >= 0 && index < keys.Count - 1)
                     {
-                        return model with { CurrentFile = Option<FileId>.Some(keys[index + 1]) };
+                        return this with { CurrentFile = Option<FileId>.Some(keys[index + 1]) };
                     }
-                    return model;
+                    return this;
                 },
-                None: () => model
+                None: () => this
             );
         }
 
         /// <summary>
         /// Move to the previous file
         /// </summary>
-        public static AppModel MoveToPreviousFile(this AppModel model)
-        {
-            return model.CurrentFile.Match(
-                Some: currentId =>
+        public AppModel MoveToPreviousFile() =>
+            CurrentFile.Map(
+                 currentId =>
                 {
                     // Get ordered keys
-                    var keys = model.Files.Keys.OrderBy(k => k.Value).ToList();
+                    var keys = Files.Keys.OrderBy(k => k.Value).ToList();
                     var index = keys.FindIndex(k => k.Value == currentId.Value);
 
                     if (index > 0)
                     {
-                        return model with { CurrentFile = Option<FileId>.Some(keys[index - 1]) };
+                        return this with { CurrentFile = Option<FileId>.Some(keys[index - 1]) };
                     }
-                    return model;
-                },
-                None: () => model
-            );
-        }
+                    return this;
+                }).IfNone(this);   
 
         /// <summary>
         /// Update file state
         /// </summary>
-        public static AppModel UpdateFileState(this AppModel model, FileState state)
-        {
-            return model.CurrentFile.Match(
-                Some: currentId =>
+        public AppModel UpdateFileState(FileState state) =>
+            CurrentFile.Map(
+                currentId =>
                 {
-                    if (model.Files.ContainsKey(currentId))
+                    if (Files.ContainsKey(currentId))
                     {
-                        var file = model.Files[currentId];
+                        var file = Files[currentId];
                         var updatedFile = file with { State = state };
 
-                        return model with
+                        return this with
                         {
-                            Files = model.Files.AddOrUpdate(currentId, updatedFile)
+                            Files = Files.AddOrUpdate(currentId, updatedFile)
                         };
                     }
-                    return model;
-                },
-                None: () => model
-            );
-        }
+                    return this;
+                }).IfNone(this);          
 
         /// <summary>
         /// Update file name
         /// </summary>
-        public static AppModel UpdateFilename(this AppModel model, string newFilename)
-        {
-            return model.CurrentFile.Match(
-                Some: currentId =>
+        public AppModel UpdateFilename(string newFilename) =>
+            CurrentFile.Map(
+                currentId =>
                 {
-                    if (model.Files.ContainsKey(currentId))
+                    if (Files.ContainsKey(currentId))
                     {
-                        var file = model.Files[currentId];
+                        var file = Files[currentId];
                         var updatedFile = file with { FileName = new FileName(newFilename) };
 
-                        return model with
+                        return this with
                         {
-                            Files = model.Files.AddOrUpdate(currentId, updatedFile)
+                            Files = Files.AddOrUpdate(currentId, updatedFile)
                         };
                     }
-                    return model;
-                },
-                None: () => model
-            );
-        }
+                    return this;
+                }).IfNone(this);          
+        
     }
 }

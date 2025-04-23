@@ -1,16 +1,11 @@
 ﻿using LanguageExt;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static LanguageExt.Prelude;
-using static MediaOrganiser.Core.Types;
+using LanguageExt.Common;
 using LanguageExt.Traits;
-using System.IO;
-using static MediaOrganiser.Core.AppErrors;
+using System.Diagnostics;
+using static LanguageExt.Prelude;
+using static MediaOrganiser.Domain.AppErrors;
 
-namespace MediaOrganiser.Core
+namespace MediaOrganiser.Domain
 {
     public static class Extensions
     {
@@ -43,7 +38,7 @@ namespace MediaOrganiser.Core
             ma | @catch(e => e.HasException<UnauthorizedAccessException>(), e => IO.fail<A>(UnauthorisedAccess(path, e)));
 
         public static IO<A> HandleEmptyPath<A>(this IO<A> ma) =>
-            ma | @catch(e => e.HasException<ArgumentException>() && e.Message.Contains("path is empty"), 
+            ma | @catch(e => e.HasException<ArgumentException>() && e.Message.Contains("path is empty"),
                 e => IO.fail<A>(PathIsEmpty(e)));
 
         public static IO<A> HandleInvalidDirectory<A>(this IO<A> ma, string path) =>
@@ -62,8 +57,21 @@ namespace MediaOrganiser.Core
         /// </summary>
         public static IO<(Seq<A> Succs, Seq<UserError> UserErrors)> ExtractUserErrors<A>(this Seq<IO<A>> items) =>
             from infos in items.Partition()
-            let separatedErrors = infos.Fails.SeparateUserErrors()
+            let separatedErrors = SeparateUserErrors(infos.Fails)
             from _ in separatedErrors.Unexpected.Traverse(IO.fail<A>) // Traverse prevents early-out on any item in collection having an error
-            select (infos.Succs, separatedErrors.User);     
+            select (infos.Succs, separatedErrors.User);
+        public static (Seq<UserError> User, Seq<Error> Unexpected) SeparateUserErrors(this Seq<Error> allErrors)
+        {
+            // Log errors before converting to user safe errors
+            allErrors.Iter(e =>
+            {
+                Debug.WriteLine(e.Message);
+                e.Exception.IfSome(ex => Debug.Write(ex));
+                e.Inner.IfSome(inner => Debug.Write(inner.Exception));
+            });
+
+            var separated = allErrors.Separate(err => err.Code == UserError.DisplayErrorCode);
+            return (User: separated.Matched.Select(item => new UserError(item.Message)), Unexpected: separated.Unmatched);
+        }
     }
 }

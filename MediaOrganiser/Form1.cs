@@ -1,15 +1,12 @@
 using LanguageExt;
 using LanguageExt.Common;
 using MediaOrganiser.Services;
-using MediaOrganiser.Core;
 using System.Diagnostics;
 using System.IO;
-using System.Windows.Forms;
-using static MediaOrganiser.Core.Types;
 using static LanguageExt.Prelude;
 using D = System.Drawing;
-using System.Xml;
 using MediaOrganiser.Logic;
+using MediaOrganiser.Domain;
 
 namespace MediaOrganiser
 {

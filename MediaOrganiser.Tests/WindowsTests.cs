@@ -1,14 +1,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using MediaOrganiser;
-using MediaOrganiser.Core;
-using static MediaOrganiser.Core.Types;
-using LanguageExt;
-using static LanguageExt.Prelude;
-using System.IO;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System;
-using System.Linq;
+using MediaOrganiser.Domain;
 
 namespace MediaOrganiser.Tests
 {

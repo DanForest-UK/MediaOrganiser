@@ -1,12 +1,6 @@
 ﻿using LanguageExt;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using MediaOrganiser.Domain;
 using static LanguageExt.Prelude;
-using static MediaOrganiser.Core.Types;
-using D = System.Drawing;
 
 namespace MediaOrganiser
 {

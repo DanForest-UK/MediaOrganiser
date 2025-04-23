@@ -3,18 +3,11 @@
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
-	  <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
-    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="LanguageExt.Core" Version="5.0.0-beta-50" />
-    <PackageReference Include="System.Drawing.Common" Version="6.0.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\MediaOrganiser.Domain\MediaOrganiser.Domain.csproj" />
   </ItemGroup>
 
 </Project>

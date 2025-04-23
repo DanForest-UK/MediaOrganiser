@@ -1,14 +1,8 @@
 ﻿using LanguageExt;
 using MediaOrganiser.Logic;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static MediaOrganiser.Core.Types;
-using static LanguageExt.Prelude;
 using LanguageExt.Common;
+using MediaOrganiser.Domain;
 
 namespace MediaOrganiser.Services
 {
