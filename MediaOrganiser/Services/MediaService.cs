@@ -4,64 +4,63 @@ using System.Diagnostics;
 using LanguageExt.Common;
 using MediaOrganiser.Domain;
 
-namespace MediaOrganiser.Services
+namespace MediaOrganiser.Services;
+
+public class MediaService
 {
-    public class MediaService
+    /// <summary>
+    /// Scans the specified directory for media files
+    /// </summary>
+    public async Task<Either<Error, FileResponse>> ScanDirectoryAsync(string path)
     {
-        /// <summary>
-        /// Scans the specified directory for media files
-        /// </summary>
-        public async Task<Either<Error, FileResponse>> ScanDirectoryAsync(string path)
+        try
         {
-            try
-            {
-                var result = await Task.Run(() => ScanFiles.DoScanFiles(path).Run());
-                ObservableState.SetFiles(result.Files);
-                return result!;
-            }
-            catch (ManyExceptions many)
-            {
-                foreach (var ex in many)
-                    Debug.WriteLine(ex.Message);
-
-                return many.Errors.First().ToError();
-            }
-            catch (ErrorException e)
-            {
-                return e.ToError();
-            }
+            var result = await Task.Run(() => ScanFiles.DoScanFiles(path).Run());
+            ObservableState.SetFiles(result.Files);
+            return result!;
         }
-
-        /// <summary>
-        /// Organizes the files based on their state
-        /// </summary>
-        public async Task<Either<Error, OrganiseResponse>> OrganizeFilesAsync(string destinationPath)
+        catch (ManyExceptions many)
         {
-            try
-            {
-                var result = await Task.Run(() =>
-                    OrganiseFiles.DoOrganiseFiles(
-                        ObservableState.Current.Files.Values.ToSeq(),
-                        destinationPath,
-                        ObservableState.Current.CopyOnly,
-                        ObservableState.Current.SortByYear,
-                        ObservableState.Current.KeepParentFolder).Run());
+            foreach (var ex in many)
+                Debug.WriteLine(ex.Message);
 
-                if (!result.Any())
-                    ObservableState.ClearFiles();
-                return new OrganiseResponse(result, result.IsEmpty);
-            }
-            catch (ManyExceptions many)
-            {
-                foreach (var ex in many)
-                    Debug.WriteLine(ex.Message);
+            return many.Errors.First().ToError();
+        }
+        catch (ErrorException e)
+        {
+            return e.ToError();
+        }
+    }
 
-                return many.Errors.First().ToError();
-            }
-            catch (ErrorException e)
-            {
-                return e.ToError();
-            }
+    /// <summary>
+    /// Organizes the files based on their state
+    /// </summary>
+    public async Task<Either<Error, OrganiseResponse>> OrganizeFilesAsync(string destinationPath)
+    {
+        try
+        {
+            var result = await Task.Run(() =>
+                OrganiseFiles.DoOrganiseFiles(
+                    ObservableState.Current.Files.Values.ToSeq(),
+                    destinationPath,
+                    ObservableState.Current.CopyOnly,
+                    ObservableState.Current.SortByYear,
+                    ObservableState.Current.KeepParentFolder).Run());
+
+            if (!result.Any())
+                ObservableState.ClearFiles();
+            return new OrganiseResponse(result, result.IsEmpty);
+        }
+        catch (ManyExceptions many)
+        {
+            foreach (var ex in many)
+                Debug.WriteLine(ex.Message);
+
+            return many.Errors.First().ToError();
+        }
+        catch (ErrorException e)
+        {
+            return e.ToError();
         }
     }
 }

@@ -7,16 +7,17 @@ using static LanguageExt.Prelude;
 using D = System.Drawing;
 using MediaOrganiser.Logic;
 using MediaOrganiser.Domain;
+using MediaOrganiser.WindowsSpecific;
 
 namespace MediaOrganiser
 {
-    public partial class Form1 : Form
+    public partial class MainForm : Form
     {
         readonly MediaService mediaService;
         Option<VideoPlayerControl> videoPlayer;
         Option<DocumentViewerControl> documentViewer;
 
-        public Form1()
+        public MainForm()
         {
             InitializeComponent();
 
@@ -242,7 +243,7 @@ namespace MediaOrganiser
                 btnRotateRight.Visible = true;
                 picCurrentImage.Visible = true;
 
-                var rotationResult = Try.lift(() => Windows.RotateImage(mediaInfo.Rotation, mediaInfo.FullPath.Value).Run());
+                var rotationResult = Try.lift(() => Images.RotateImage(mediaInfo.FullPath.Value, mediaInfo.Rotation).Run());
 
                 rotationResult.Match(
                     Succ: rotatedImage =>

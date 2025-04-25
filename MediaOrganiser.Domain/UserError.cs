@@ -1,7 +1,6 @@
-﻿namespace MediaOrganiser.Domain
+﻿namespace MediaOrganiser.Domain;
+
+public record UserError(string Message)
 {
-    public record UserError(string Message)
-    {
-        public const int DisplayErrorCode = 303;
-    }
+    public const int DisplayErrorCode = 303;
 }

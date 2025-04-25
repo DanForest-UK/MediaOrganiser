@@ -1,13 +1,12 @@
 ﻿using LanguageExt;
 using MediaOrganiser.Domain;
 
-namespace MediaOrganiser.Logic
+namespace MediaOrganiser.Logic;
+
+/// <summary>
+/// Dependency injection
+/// </summary>
+public static class Runtime
 {
-    /// <summary>
-    /// Dependency injection
-    /// </summary>
-    public static class Runtime
-    {
-        public static Func<MediaInfo, string, IO<Unit>> RotateImageAndSave = (_, _) => throw new NotImplementedException();
-    }
+    public static Func<MediaInfo, string, IO<Unit>> RotateImageAndSave = (_, _) => throw new NotImplementedException();
 }

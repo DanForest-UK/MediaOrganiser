@@ -2,6 +2,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Drawing;
 using System.Drawing.Imaging;
 using MediaOrganiser.Domain;
+using MediaOrganiser.WindowsSpecific;
 
 namespace MediaOrganiser.Tests
 {
@@ -50,7 +51,7 @@ namespace MediaOrganiser.Tests
         [TestMethod]
         public void RotateImageZero()
         {
-            using var bitmap = Windows.RotateImage(Rotation.None, testImagePath).Run();
+            using var bitmap = Images.RotateImage(testImagePath, Rotation.None).Run();
             Assert.AreEqual(200, bitmap.Width);
             Assert.AreEqual(100, bitmap.Height);
         }
@@ -61,7 +62,7 @@ namespace MediaOrganiser.Tests
         [TestMethod]
         public void Rotate90()
         {
-            using var bitmap = Windows.RotateImage(Rotation.Rotate90, testImagePath).Run();
+            using var bitmap = Images.RotateImage(testImagePath, Rotation.Rotate90).Run();
             Assert.AreEqual(100, bitmap.Width);
             Assert.AreEqual(200, bitmap.Height);
         }
@@ -72,7 +73,7 @@ namespace MediaOrganiser.Tests
         [TestMethod]
         public void Rotate180()
         {
-            using var bitmap = Windows.RotateImage(Rotation.Rotate180, testImagePath).Run();
+            using var bitmap = Images.RotateImage(testImagePath, Rotation.Rotate180).Run();
             Assert.AreEqual(200, bitmap.Width);
             Assert.AreEqual(100, bitmap.Height);
         }
@@ -83,7 +84,7 @@ namespace MediaOrganiser.Tests
         [TestMethod]
         public void Rotate270()
         {
-            using var bitmap = Windows.RotateImage(Rotation.Rotate270, testImagePath).Run();
+            using var bitmap = Images.RotateImage(testImagePath, Rotation.Rotate270).Run();
             Assert.AreEqual(100, bitmap.Width);
             Assert.AreEqual(200, bitmap.Height);
         }
@@ -96,7 +97,7 @@ namespace MediaOrganiser.Tests
         {
             var nonExistentPath = Path.Combine(testFolder, "doesnotexist.jpg");
             Assert.ThrowsException<FileNotFoundException>(() =>
-                Windows.RotateImage(Rotation.None, nonExistentPath).Run());
+                Images.RotateImage(nonExistentPath, Rotation.None).Run());
         }
 
         /// <summary>
@@ -109,7 +110,7 @@ namespace MediaOrganiser.Tests
             var mediaInfo = TestDataFactory.CreateMediaInfoFromFile(1, testImagePath);
             var outputPath = Path.Combine(testFolder, "output.jpg");
 
-            Windows.RotateImageAndSave(mediaInfo with { Rotation = Rotation.Rotate90 }, outputPath).Run();
+            Images.RotateImageAndSave(mediaInfo with { Rotation = Rotation.Rotate90 }, outputPath).Run();
 
             Assert.IsTrue(File.Exists(outputPath));
 

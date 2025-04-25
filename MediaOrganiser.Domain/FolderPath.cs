@@ -1,4 +1,3 @@
-﻿namespace MediaOrganiser.Domain
-{    
-    public record FolderPath(string Value);
-}
+﻿namespace MediaOrganiser.Domain;
+
+public record FolderPath(string Value);

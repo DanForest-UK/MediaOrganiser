@@ -1,3 +1,2 @@
-﻿namespace MediaOrganiser.Domain
-{    public record FullPath(string Value);
-}
+﻿namespace MediaOrganiser.Domain;
+public record FullPath(string Value);

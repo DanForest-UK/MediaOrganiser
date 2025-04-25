@@ -1,45 +1,40 @@
 using MediaOrganiser.Logic;
+using MediaOrganiser.WindowsSpecific;
 using System.IO;
 
-namespace MediaOrganiser
+namespace MediaOrganiser;
+
+internal static class Program
 {
-    internal static class Program
+    /// <summary>
+    ///  The main entry point for the application.
+    /// </summary>
+    [STAThread]
+    static void Main()
     {
-        /// <summary>
-        ///  The main entry point for the application.
-        /// </summary>
-        [STAThread]
-        static void Main()
-        {
-            // To customize application configuration such as set high DPI settings or default font,
-            // see https://aka.ms/applicationconfiguration.
-            ApplicationConfiguration.Initialize();
+        ApplicationConfiguration.Initialize();
+        Application.EnableVisualStyles();
+        Application.SetCompatibleTextRenderingDefault(false);
 
-            // Set up the application-wide styles
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
+        // Apply custom styles
+        ApplyStyles();
 
-            // Apply modern look and feel
-            ApplyModernStyles();
+        // Setup dependency for rotating image in a windows app
+        Runtime.RotateImageAndSave = Images.RotateImageAndSave;
 
-            // Setup dependency for rotating image in a windows app
-            Runtime.RotateImageAndSave = Windows.RotateImageAndSave;
+        StateSerialiser.StateFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appstate.json");
 
-            StateSerialiser.StateFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appstate.json"); 
+        Application.Run(new MainForm());
+    }
 
-            Application.Run(new Form1());
-        }
+    /// <summary>
+    /// Applies modern styles to the application
+    /// </summary>
+    private static void ApplyStyles()
+    {
+        ToolStripManager.Renderer = new ToolStripProfessionalRenderer();
 
-        /// <summary>
-        /// Applies modern styles to the application
-        /// </summary>
-        private static void ApplyModernStyles()
-        {
-            // Set modern renderer for menus and toolbars
-            ToolStripManager.Renderer = new ToolStripProfessionalRenderer();
-
-            // Set the application's default font
-            Application.SetDefaultFont(ThemeManager.DefaultFont);
-        }       
+        // Set the application's default font
+        Application.SetDefaultFont(ThemeManager.DefaultFont);
     }
 }

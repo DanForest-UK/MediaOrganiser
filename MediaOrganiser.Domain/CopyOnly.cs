@@ -1,4 +1,3 @@
-﻿namespace MediaOrganiser.Domain
-{
-    public record CopyOnly(bool Value);
-}
+﻿namespace MediaOrganiser.Domain;
+
+public record CopyOnly(bool Value);

@@ -1,5 +1,4 @@
 ﻿
-namespace MediaOrganiser.Domain
-{
-    public record Extension(string Value);
-}
+namespace MediaOrganiser.Domain;
+
+public record Extension(string Value);
