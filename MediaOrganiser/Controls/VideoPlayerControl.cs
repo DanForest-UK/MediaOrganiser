@@ -4,21 +4,28 @@ using System.Windows.Forms;
 using System.Windows.Forms.Integration;
 using System.Windows.Media;
 using static LanguageExt.Prelude;
+using C = System.Windows.Controls;
 
-namespace MediaOrganiser
+namespace MediaOrganiser.Controls
 {
     /// <summary>
     /// A modern video player control using WPF MediaElement
     /// </summary>
     public class VideoPlayerControl : UserControl
     {
-        // The ElementHost control hosts the WPF MediaElement
-        ElementHost elementHost;
+        /// <summary>
+        /// The ElementHost control hosts the WPF MediaElement
+        /// </summary>
+        ElementHost elementHost = new ();
 
-        // The WPF MediaElement
-        System.Windows.Controls.MediaElement mediaElement;
+        /// <summary>
+        /// The WPF MediaElement
+        /// </summary>
+        C.MediaElement mediaElement = new ();
 
-        // Constructor
+        /// <summary>
+        /// Constructor
+        /// </summary>
         public VideoPlayerControl()
         {
             InitializeControls();
@@ -29,13 +36,12 @@ namespace MediaOrganiser
         /// </summary>
         void InitializeControls()
         {
-            // Create the ElementHost that will host our WPF control
+            // ElementHost will host our WPF control
             elementHost = new ElementHost
             {
                 Dock = DockStyle.Fill
             };
 
-            // Create the MediaElement
             mediaElement = new System.Windows.Controls.MediaElement
             {
                 LoadedBehavior = System.Windows.Controls.MediaState.Manual,
@@ -44,7 +50,7 @@ namespace MediaOrganiser
                 Volume = 1.0
             };
 
-            // Set the MediaElement as the ElementHost's child
+            // Media element needs to be element host child
             elementHost.Child = mediaElement;
 
             // Add the ElementHost to our control

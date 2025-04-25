@@ -3,6 +3,7 @@ using LanguageExt;
 using static LanguageExt.Prelude;
 using System.Text.Json;
 using MediaOrganiser.Domain;
+using MediaOrganiser.Logic;
 
 namespace MediaOrganiser.Tests;
 
@@ -13,7 +14,7 @@ namespace MediaOrganiser.Tests;
 [TestClass]
 public class StateSerialiserTests
 {
-    private AppModel testModel;
+    private AppModel testModel = AppModel.Empty;
 
     /// <summary>
     /// Sets up the test environment before each test runs.
@@ -25,7 +26,10 @@ public class StateSerialiserTests
     {
         // Create a temporary path for test state file
         StateSerialiser.StateFilePath = Path.Combine(Path.GetTempPath(), "MediaOrganiserTests", Guid.NewGuid().ToString(), "appstate.json");
-        Directory.CreateDirectory(Path.GetDirectoryName(StateSerialiser.StateFilePath));
+        
+        (from sfp in StateSerialiser.StateFilePath.ValueOrNone()
+         from dn in Path.GetDirectoryName(sfp).ValueOrNone()
+         select dn).IfSome(dir => Directory.CreateDirectory(dir));
 
         // Create the test state file to ensure it exists for tests
         TestDataFactory.CreateTestFile(StateSerialiser.StateFilePath, 0);
@@ -55,12 +59,12 @@ public class StateSerialiserTests
     [TestCleanup]
     public void Cleanup()
     {
-        // Clean up test directory
         try
         {
-            if (Directory.Exists(Path.GetDirectoryName(StateSerialiser.StateFilePath)))
+            var dir = Path.GetDirectoryName(StateSerialiser.StateFilePath);
+            if (Directory.Exists(dir))
             {
-                Directory.Delete(Path.GetDirectoryName(StateSerialiser.StateFilePath), true);
+                Directory.Delete(dir, true);
             }
         }
         catch (Exception ex)
@@ -94,23 +98,20 @@ public class StateSerialiserTests
     [TestMethod]
     public void ToAppModel()
     {
-        // Arrange
         var serializable = new StateSerialiser.SerialisableAppModel(
-            Files: new[]
-            {
+            Files:
+            [
                 TestDataFactory.CreateMediaInfo(1, "file1", FileCategory.Image),
                 TestDataFactory.CreateMediaInfo(2, "file2", FileCategory.Image)
-            },
+            ],
             CurrentFileId: 1,
             CurrentFolder: "C:\\test",
             CopyOnly: true,
             SortByYear: false,
             KeepParentFolder: true);
 
-        // Act
         var model = serializable.ToAppModel();
 
-        // Assert
         Assert.IsNotNull(model);
         Assert.AreEqual(2, model.Files.Count);
         Assert.AreEqual(1, model.CurrentFile.Match(id => id.Value, () => -1));
@@ -148,7 +149,7 @@ public class StateSerialiserTests
     public void SaveStateNoFiles()
     {
         var emptyModel = new AppModel(
-            Files: new Map<FileId, MediaInfo>(),
+            Files: [],
             WorkInProgress: false,
             CurrentFolder: Some(new FolderPath("C:\\test")),
             CurrentFile: None,
@@ -207,8 +208,14 @@ public class StateSerialiserTests
     [TestMethod]
     public void CorruptStateIsNone()
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(StateSerialiser.StateFilePath));
-        File.WriteAllText(StateSerialiser.StateFilePath, "This is not valid JSON");
+        var path = Path.GetDirectoryName(StateSerialiser.StateFilePath).ValueOrNone();
+        Assert.IsTrue(path.IsSome);
+
+        path.IfSome(p =>
+        {
+            Directory.CreateDirectory(p);
+            File.WriteAllText(StateSerialiser.StateFilePath, "This is not valid JSON");       
+        });        
 
         var result = StateSerialiser.LoadState();
         Assert.IsTrue(result.IsNone);

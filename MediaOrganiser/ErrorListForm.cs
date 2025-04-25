@@ -8,10 +8,10 @@ namespace MediaOrganiser
     /// </summary>
     public partial class ErrorListForm : Form
     {
-        private ListBox listErrors;
-        private Button btnDismiss;
-        private Label lblTitle;
-        private Panel pnlContent;
+        ListBox listErrors = new ();
+        Button btnDismiss = new ();
+        Label lblTitle = new ();
+        Panel pnlContent = new ();
 
         public ErrorListForm(string title, Seq<UserError> errors)
         {

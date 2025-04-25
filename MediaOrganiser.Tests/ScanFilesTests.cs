@@ -246,7 +246,7 @@ public class ScanFilesTests
     public void ScanFilesLongPath()
     {
         // Arrange - Create a path that's too long (> 260 chars on Windows)
-        string longPathPart = new string('a', 50); 
+        string longPathPart = new ('a', 50); 
         string longPath = testFolder;
 
         // Build up a path that's definitely too long
@@ -262,11 +262,8 @@ public class ScanFilesTests
     /// <summary>
     /// Helper method to create test files with specified size.
     /// </summary>
-    /// <param name="path">The path of the test file.</param>
-    /// <param name="sizeInBytes">The size of the test file in bytes.</param>
-    private void CreateTestFile(string path, int sizeInBytes)
+    static void CreateTestFile(string path, int sizeInBytes)
     {
-        // Ensure the directory exists
         var directoryName = Path.GetDirectoryName(path);
         if (directoryName != null)
         {

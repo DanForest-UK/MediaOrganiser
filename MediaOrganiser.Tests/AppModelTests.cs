@@ -16,9 +16,9 @@ public class AppModelTests
     /// <summary>
     /// Default AppModel instance
     /// </summary>
-    AppModel CreateDefaultModel() =>
+    static AppModel CreateDefaultModel() =>
         new(
-            Files: new Map<FileId, MediaInfo>(),
+            Files: [],
             WorkInProgress: false,
             CurrentFolder: Option<FolderPath>.None,
             CurrentFile: Option<FileId>.None,
@@ -29,7 +29,7 @@ public class AppModelTests
     /// <summary>
     /// Creates a test MediaInfo instance with specified properties.
     /// </summary>
-    MediaInfo CreateMediaInfo(int id, string fileName, FileCategory category, FileState state = FileState.Undecided) =>
+    static MediaInfo CreateMediaInfo(int id, string fileName, FileCategory category, FileState state = FileState.Undecided) =>
         new(
             Id: new FileId(id),
             FileName: new FileName(fileName),

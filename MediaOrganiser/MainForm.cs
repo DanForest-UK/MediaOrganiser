@@ -8,12 +8,12 @@ using D = System.Drawing;
 using MediaOrganiser.Logic;
 using MediaOrganiser.Domain;
 using MediaOrganiser.WindowsSpecific;
+using MediaOrganiser.Controls;
 
 namespace MediaOrganiser
 {
     public partial class MainForm : Form
     {
-        readonly MediaService mediaService;
         Option<VideoPlayerControl> videoPlayer;
         Option<DocumentViewerControl> documentViewer;
 
@@ -41,8 +41,6 @@ namespace MediaOrganiser
             // Style the main picture display area
             picCurrentImage.BorderStyle = BorderStyle.FixedSingle;
             picCurrentImage.BackColor = ThemeManager.PrimaryBackColor;
-
-            mediaService = new MediaService();
 
             ObservableState.StateChanged += OnStateChanged;
             InitializeVideoPlayer();
@@ -72,9 +70,11 @@ namespace MediaOrganiser
         void InitializeVideoPlayer() =>
             Try.lift(() =>
             {
-                var vp = new VideoPlayerControl();
-                vp.Dock = DockStyle.Fill;
-                vp.Visible = false;
+                var vp = new VideoPlayerControl
+                {
+                    Dock = DockStyle.Fill,
+                    Visible = false
+                };
                 picCurrentImage.Controls.Add(vp);
                 videoPlayer = vp;
             }).IfFail(ex =>
@@ -86,9 +86,11 @@ namespace MediaOrganiser
         void InitializeDocumentViewer() =>
             Try.lift(() =>
             {
-                var dv = new DocumentViewerControl();
-                dv.Dock = DockStyle.Fill;
-                dv.Visible = false;
+                var dv = new DocumentViewerControl
+                {
+                    Dock = DockStyle.Fill,
+                    Visible = false
+                };
                 picCurrentImage.Controls.Add(dv);
                 documentViewer = dv;
             }).IfFail(ex =>
@@ -228,7 +230,7 @@ namespace MediaOrganiser
         /// <summary>
         /// Formats file size as KB or MB based on size
         /// </summary>
-        string FormatFileSize(long bytes) =>
+        static string FormatFileSize(long bytes) =>
             bytes < 1024 * 1024
                 ? $"{bytes / 1024.0:F1} KB"
                 : $"{bytes / (1024.0 * 1024.0):F2} MB";
@@ -452,7 +454,7 @@ namespace MediaOrganiser
                 return unit;
             }
 
-            lblStatus.Text = text.Length > 100 ? text.Substring(0, 97) + "..." : text;
+            lblStatus.Text = text.Length > 100 ? string.Concat(text.AsSpan(0, 97), "...") : text;
 
             exception.IfSome(ex => Debug.Write(ex));
             return unit;
@@ -467,7 +469,7 @@ namespace MediaOrganiser
         /// <summary>
         /// Handles the KeepParentFolder checkbox change
         /// </summary>
-        void chkKeepParentFolder_Changed(object sender, EventArgs e) =>
+        void chkKeepParentFolder_Changed(object? sender, EventArgs e) =>
             ObservableState.SetKeepParentFolder(chkKeepParentFolder.Checked);
 
         /// <summary>
@@ -513,7 +515,7 @@ namespace MediaOrganiser
                     ObservableState.SetWorkInProgress(true);
                     UpdateStatus("Status: Scanning files...", None);
 
-                    var result = await mediaService.ScanDirectoryAsync(path);
+                    var result = await MediaService.ScanDirectoryAsync(path);
 
                     result.Match(
                         Right: fileResponse =>
@@ -604,7 +606,7 @@ namespace MediaOrganiser
                 ObservableState.SetWorkInProgress(true);
                 UpdateStatus("Status: Organising files...", None);
 
-                var result = await mediaService.OrganizeFilesAsync(destinationDialog.SelectedPath);
+                var result = await MediaService.OrganizeFilesAsync(destinationDialog.SelectedPath);
 
                 result.Match(
                     Right: organiseResponse =>

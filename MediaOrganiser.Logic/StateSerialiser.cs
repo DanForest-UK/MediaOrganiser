@@ -4,12 +4,12 @@ using static LanguageExt.Prelude;
 using System.Diagnostics;
 using MediaOrganiser.Domain;
 
-namespace MediaOrganiser;
+namespace MediaOrganiser.Logic;
 
 /// <summary>
 /// Handles serialization and deserialization of application state
 /// </summary>
-public static class StateSerialiser 
+public static class StateSerialiser
 {
     public static string StateFilePath = "";
     
@@ -72,8 +72,8 @@ public static class StateSerialiser
                             .ToArray(); // reset index of files
 
                     // If any files are missing since last session we start at the beginning again
-                    var currentFile = presentFiles.Count() == state.Files.Count() &&
-                                      state.CurrentFileId < presentFiles.Count()
+                    var currentFile = presentFiles.Length == state.Files.Length &&
+                                      state.CurrentFileId < presentFiles.Length
                         ? state.CurrentFileId
                         : 1;
 
@@ -90,8 +90,8 @@ public static class StateSerialiser
     /// Conerts app model to something that serializes nicely
     /// </summary>
     public static SerialisableAppModel ToSerializableAppModel(this AppModel model) =>
-        new SerialisableAppModel(
-            Files: model.Files.Values.ToArray(),
+        new(
+            Files: [.. model.Files.Values],
             CurrentFileId: model.CurrentFile.Map(v => v.Value).IfNone(0),
             CurrentFolder: model.CurrentFolder.Map(v => v.Value).IfNone(""),
             CopyOnly: model.CopyOnly.Value,
@@ -102,7 +102,7 @@ public static class StateSerialiser
     /// Converts serializable version back to main app model
     /// </summary>
     public static AppModel ToAppModel(this SerialisableAppModel model) =>
-        new AppModel(
+        new(
             Files: toMap(model.Files.Select(m => (m.Id, m))),
             WorkInProgress: false,
             CurrentFolder: model.CurrentFolder.HasValue()

@@ -15,7 +15,7 @@ public static class Extensions
     public static (Seq<T> Matched, Seq<T> Unmatched) Separate<T>(
         this IEnumerable<T> source, Func<T, bool> predicate)
     {
-        var sourceArray = source as T[] ?? source.ToArray();
+        var sourceArray = source as T[] ?? [.. source];
 
         return (Matched: toSeq(sourceArray.Where(predicate)),
                 Unmatched: toSeq(sourceArray.Where(item => !predicate(item))));
@@ -26,6 +26,11 @@ public static class Extensions
     /// </summary>
     public static bool HasValue(this string? value) =>
         !string.IsNullOrWhiteSpace(value);
+
+    public static Option<string> ValueOrNone(this string? value) =>
+        value.HasValue()
+            ? value
+            : None;
 
     /// <summary>
     /// Wraps IO operation with safe error handling
@@ -89,7 +94,7 @@ public static class Extensions
             e.Inner.IfSome(inner => Debug.Write(inner.Exception));
         });
 
-        var separated = allErrors.Separate(err => err.Code == UserError.DisplayErrorCode);
-        return (User: separated.Matched.Select(item => new UserError(item.Message)), Unexpected: separated.Unmatched);
+        var (Matched, Unmatched) = allErrors.Separate(err => err.Code == UserError.DisplayErrorCode);
+        return (User: Matched.Select(item => new UserError(item.Message)), Unexpected: Unmatched);
     }
 }

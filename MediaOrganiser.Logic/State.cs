@@ -14,7 +14,7 @@ public static class ObservableState
     /// Thread safe and atomic management of state
     /// </summary>
     static readonly Atom<AppModel> stateAtom = Atom(new AppModel(
-        Files: new Map<FileId, MediaInfo>(),
+        Files: [],
         WorkInProgress: false,
         CurrentFolder: None,
         CurrentFile: None,
@@ -102,7 +102,7 @@ public static class ObservableState
     public static void ClearFiles() =>
         Update(stateAtom.Value with
         {
-            Files = new Map<FileId, MediaInfo>(),
+            Files = [],
             CurrentFile = None
         });
 

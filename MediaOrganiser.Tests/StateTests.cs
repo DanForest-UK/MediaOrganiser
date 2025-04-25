@@ -22,7 +22,7 @@ public class StateTests
     {
         // Reset observable state to default before each test
         ObservableState.Update(new AppModel(
-            new Map<FileId, MediaInfo>(),
+            [],
             false,
             None,
             None,
@@ -56,11 +56,11 @@ public class StateTests
     [TestMethod]
     public void SetFiles()
     {
-        var files = toSeq(new[]
-        {
+        var files = toSeq(
+        [
             CreateMediaInfo(1, "file1", FileCategory.Image),
             CreateMediaInfo(2, "file2", FileCategory.Video)
-        });
+        ]);
                    
         ObservableState.SetFiles(files);
 
@@ -111,12 +111,12 @@ public class StateTests
     [TestMethod]
     public void NextFile()
     {
-        var files = toSeq(new[]
-        {
+        var files = toSeq(
+        [
             CreateMediaInfo(1, "file1", FileCategory.Image),
             CreateMediaInfo(2, "file2", FileCategory.Image),
             CreateMediaInfo(3, "file3", FileCategory.Image)
-        });
+        ]);
         ObservableState.SetFiles(files);
 
         ObservableState.NextFile();
@@ -142,12 +142,12 @@ public class StateTests
     [TestMethod]
     public void PreviousFile()
     {
-        var files = toSeq(new[]
-        {
+        var files = toSeq(
+        [
             CreateMediaInfo(1, "file1", FileCategory.Image),
             CreateMediaInfo(2, "file2", FileCategory.Image),
             CreateMediaInfo(3, "file3", FileCategory.Image)
-        });
+        ]);
 
         ObservableState.SetFiles(files);
         ObservableState.NextFile(); 
@@ -174,10 +174,10 @@ public class StateTests
     [TestMethod]
     public void UpdateFileState()
     {
-        var files = toSeq(new[]
-        {
+        var files = toSeq(
+        [
             CreateMediaInfo(1, "file1", FileCategory.Image)
-        });
+        ]);
         ObservableState.SetFiles(files);
 
         ObservableState.UpdateFileState(FileState.Keep);
@@ -251,10 +251,10 @@ public class StateTests
     [TestMethod]
     public void RotateImage()
     {
-        var files = toSeq(new[]
-        {
+        var files = toSeq(
+        [
             CreateMediaInfo(1, "file1", FileCategory.Image)
-        });
+        ]);
         ObservableState.SetFiles(files);
         ObservableState.RotateCurrentImage(Rotation.Rotate90);
 
@@ -280,10 +280,10 @@ public class StateTests
     [TestMethod]
     public void UpdateFilename()
     {
-        var files = toSeq(new[]
-        {
+        var files = toSeq(
+        [
             CreateMediaInfo(1, "file1", FileCategory.Image)
-        });
+        ]);
         ObservableState.SetFiles(files);
         ObservableState.UpdateFilename("newname");
 
@@ -297,11 +297,11 @@ public class StateTests
     [TestMethod]
     public void ClearFiles()
     {
-        var files = toSeq(new[]
-        {
+        var files = toSeq(
+        [
             CreateMediaInfo(1, "file1", FileCategory.Image),
             CreateMediaInfo(2, "file2", FileCategory.Image)
-        });
+        ]);
         ObservableState.SetFiles(files);
         ObservableState.ClearFiles();
 
@@ -409,7 +409,7 @@ public class StateTests
     /// Creates a new MediaInfo object with the specified properties for testing purposes.
     /// </summary>
      private static MediaInfo CreateMediaInfo(int id, string filename, FileCategory category) =>        
-        new MediaInfo(
+        new (
             new FileId(id),
             new FileName(filename),
             new FullPath($"C:\\test\\{filename}.jpg"),

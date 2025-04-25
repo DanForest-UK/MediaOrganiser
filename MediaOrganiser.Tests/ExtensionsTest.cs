@@ -106,7 +106,7 @@ public class ExtensionsTests
     /// <typeparam name="S">Return type of the IO operation</typeparam>
     /// <param name="operationHandler">Handler function to test</param>
     /// <param name="expectedMessage">Expected message in the wrapped exception</param>
-    void TestIOException<T, S>(Func<IO<S>, IO<S>> operationHandler, string expectedMessage) where T : Exception, new()
+    static void TestIOException<T, S>(Func<IO<S>, IO<S>> operationHandler, string expectedMessage) where T : Exception, new()
     {
         var exception = Assert.ThrowsException<WrappedErrorExpectedException>(
             () => operationHandler(IO.lift<S>(() => { throw new T(); })).Run());
@@ -120,10 +120,9 @@ public class ExtensionsTests
     [TestMethod]
     public void SeparateErrors()
     {
-        var errors = toSeq(new Error[]{
+        var errors = toSeq([
                 Error.New(UserError.DisplayErrorCode, "User error 1"),
-                Error.New("Non error 2")
-            });
+                Error.New("Non error 2")]);
 
         var (userErrors, unexpectedErrors) = errors.SeparateUserErrors();
 
@@ -139,9 +138,9 @@ public class ExtensionsTests
     [TestMethod]
     public void ExtractErrors()
     {
-        var operations = toSeq(new IO<int>[] {
+        var operations = toSeq([
                 IO.pure(1),
-                IO.fail<int>(AppErrors.ThereWasAProblem(Error.New("Test inner")))});
+                IO.fail<int>(AppErrors.ThereWasAProblem(Error.New("Test inner")))]);
 
         try
         {

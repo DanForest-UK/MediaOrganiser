@@ -11,8 +11,17 @@ public record AppModel(
             CopyOnly CopyOnly,
             SortByYear SortByYear,
             KeepParentFolder KeepParentFolder)
-
 {
+
+    public static AppModel Empty => new (
+        [],
+        false,
+        None,
+        None,
+        new CopyOnly(false),
+        new SortByYear(false),
+        new KeepParentFolder(false));
+
     public int CountFilesForDeletion() =>
       Files.Values.Count(f => f.State == FileState.Bin);
 

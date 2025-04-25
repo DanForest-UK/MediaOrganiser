@@ -12,8 +12,8 @@ namespace MediaOrganiser.Tests
     [TestClass]
     public class WindowsTests
     {
-        string testFolder;
-        string testImagePath;
+        string testFolder = "";
+        string testImagePath = "";
 
         /// <summary>
         /// Prepares the test environment by creating a temporary folder and test image
@@ -122,7 +122,7 @@ namespace MediaOrganiser.Tests
         /// <summary>
         /// Creates a test image with specified dimensions and a simple pattern
         /// </summary>
-        void CreateTestImage(string path, int width, int height)
+        static void CreateTestImage(string path, int width, int height)
         {
             using var bitmap = new Bitmap(width, height);
             using var g = Graphics.FromImage(bitmap);

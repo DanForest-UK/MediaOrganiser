@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LanguageExt;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -15,10 +16,10 @@ namespace MediaOrganiser;
 public static class ThemeManager
 {
     // Font definitions
-    public static readonly Font DefaultFont = new Font("Segoe UI", 9F, FontStyle.Regular);
-    public static readonly Font HeaderFont = new Font("Segoe UI", 12F, FontStyle.Bold);
-    public static readonly Font SubHeaderFont = new Font("Segoe UI", 10F, FontStyle.Bold);
-    public static readonly Font SmallFont = new Font("Segoe UI", 8F, FontStyle.Regular);
+    public static readonly Font DefaultFont = new ("Segoe UI", 9F, FontStyle.Regular);
+    public static readonly Font HeaderFont = new ("Segoe UI", 12F, FontStyle.Bold);
+    public static readonly Font SubHeaderFont = new ("Segoe UI", 10F, FontStyle.Bold);
+    public static readonly Font SmallFont = new ("Segoe UI", 8F, FontStyle.Regular);
 
     // Modern color palette
     public static readonly Color PrimaryBackColor = Color.FromArgb(250, 250, 250);   // Almost white 
@@ -58,9 +59,9 @@ public static class ThemeManager
     /// <summary>
     /// Applies standard styling to a label control with optional custom font.
     /// </summary>
-    public static Label StyleLabel(Label label, Font font = null)
+    public static Label StyleLabel(Label label, Option<Font> font = default)
     {
-        label.Font = font ?? DefaultFont;
+        label.Font = font.IfNone(DefaultFont);
         label.ForeColor = PrimaryTextColor;
         return label;
     }

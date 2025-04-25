@@ -151,7 +151,7 @@ public static class OrganiseFiles
                 pathComponents.Add(file.Date.Value.Year.ToString());
 
             // Create the target directory
-            var targetDir = Path.Combine(pathComponents.ToArray());
+            var targetDir = Path.Combine([.. pathComponents]);
             Directory.CreateDirectory(targetDir);
 
             return targetDir;

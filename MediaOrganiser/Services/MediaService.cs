@@ -6,12 +6,12 @@ using MediaOrganiser.Domain;
 
 namespace MediaOrganiser.Services;
 
-public class MediaService
+public static class MediaService
 {
     /// <summary>
     /// Scans the specified directory for media files
     /// </summary>
-    public async Task<Either<Error, FileResponse>> ScanDirectoryAsync(string path)
+    public static async Task<Either<Error, FileResponse>> ScanDirectoryAsync(string path)
     {
         try
         {
@@ -35,7 +35,7 @@ public class MediaService
     /// <summary>
     /// Organizes the files based on their state
     /// </summary>
-    public async Task<Either<Error, OrganiseResponse>> OrganizeFilesAsync(string destinationPath)
+    public static async Task<Either<Error, OrganiseResponse>> OrganizeFilesAsync(string destinationPath)
     {
         try
         {

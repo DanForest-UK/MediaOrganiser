@@ -12,9 +12,9 @@ namespace MediaOrganiser.Tests.Logic;
 [TestClass]
 public class OrganiseFilesTests
 {
-    private string testSourceFolder;
-    private string testDestinationFolder;
-    private string testBaseFolder;
+    private string testSourceFolder = "";
+    private string testDestinationFolder = "";
+    private string testBaseFolder = "";
 
     /// <summary>
     /// Sets up the test environment by creating folders and sample files
@@ -78,7 +78,7 @@ public class OrganiseFilesTests
         var imageFile = TestDataFactory.CreateMediaInfoFromFile(1, imagePath, FileState.Keep);
         var binImageFile = TestDataFactory.CreateMediaInfoFromFile(2, binImagePath, FileState.Bin);
 
-        var files = toSeq(new[] { imageFile, binImageFile });
+        var files = toSeq([imageFile, binImageFile]);
         var options = CreateOrganizationOptions(copyOnly: copyOnly);
         var result = OrganiseFiles.DoOrganiseFiles(files, testDestinationFolder, options.copyOnly, options.sortByYear, options.keepParentFolder).Run();
 
@@ -121,10 +121,10 @@ public class OrganiseFilesTests
         var documentFile = TestDataFactory.CreateMediaInfoFromFile(2, documentPath, FileState.Keep);
         var videoFile = TestDataFactory.CreateMediaInfoFromFile(3, videoPath, FileState.Keep);
 
-        var files = toSeq(new[] { imageFile, documentFile, videoFile });
-        var options = CreateOrganizationOptions(copyOnly: true);
+        var files = toSeq([imageFile, documentFile, videoFile]);
+        var (copyOnly, sortByYear, keepParentFolder) = CreateOrganizationOptions(copyOnly: true);
 
-        var result = OrganiseFiles.DoOrganiseFiles(files, testDestinationFolder, options.copyOnly, options.sortByYear, options.keepParentFolder).Run();
+        var result = OrganiseFiles.DoOrganiseFiles(files, testDestinationFolder, copyOnly, sortByYear, keepParentFolder).Run();
 
         // Assert
         Assert.IsTrue(result.IsEmpty); // No errors
@@ -148,10 +148,10 @@ public class OrganiseFilesTests
         var imageFile1 = TestDataFactory.CreateMediaInfoFromFile(1, sourcePath, FileState.Keep);
         var imageFile2 = TestDataFactory.CreateMediaInfoFromFile(2, sourcePath, FileState.Keep);
 
-        var files = toSeq(new[] { imageFile1, imageFile2 });
-        var options = CreateOrganizationOptions(copyOnly: true);
+        var files = toSeq([imageFile1, imageFile2]);
+        var (copyOnly, sortByYear, keepParentFolder) = CreateOrganizationOptions(copyOnly: true);
 
-        var result = OrganiseFiles.DoOrganiseFiles(files, testDestinationFolder, options.copyOnly, options.sortByYear, options.keepParentFolder).Run();
+        var result = OrganiseFiles.DoOrganiseFiles(files, testDestinationFolder, copyOnly, sortByYear, keepParentFolder).Run();
 
         Assert.IsTrue(result.IsEmpty); // No errors
 
@@ -174,10 +174,10 @@ public class OrganiseFilesTests
         var imagePath = Path.Combine(testSourceFolder, "image1.jpg");
         var imageFile = TestDataFactory.CreateMediaInfoFromFile(1, imagePath, FileState.Keep);
 
-        var files = toSeq(new[] { imageFile });
-        var options = CreateOrganizationOptions(copyOnly: true);
+        var files = toSeq([imageFile]);
+        var (copyOnly, sortByYear, keepParentFolder) = CreateOrganizationOptions(copyOnly: true);
 
-        var result = OrganiseFiles.DoOrganiseFiles(files, nonExistentDest, options.copyOnly, options.sortByYear, options.keepParentFolder).Run();
+        var result = OrganiseFiles.DoOrganiseFiles(files, nonExistentDest, copyOnly, sortByYear, keepParentFolder).Run();
 
         Assert.IsTrue(result.IsEmpty); // No errors
 
@@ -199,9 +199,9 @@ public class OrganiseFilesTests
         var imagePath = Path.Combine(testSourceFolder, "image1.jpg");
         var imageFile = TestDataFactory.CreateMediaInfoFromFile(1, imagePath, FileState.Keep);
 
-        var files = toSeq(new[] { imageFile });
-        var options = CreateOrganizationOptions(copyOnly: true, sortByYear: true);
-        var result = OrganiseFiles.DoOrganiseFiles(files, testDestinationFolder, options.copyOnly, options.sortByYear, options.keepParentFolder).Run();
+        var files = toSeq([imageFile]);
+        var (copyOnly, sortByYear, keepParentFolder) = CreateOrganizationOptions(copyOnly: true, sortByYear: true);
+        var result = OrganiseFiles.DoOrganiseFiles(files, testDestinationFolder, copyOnly, sortByYear, keepParentFolder).Run();
 
         Assert.IsTrue(result.IsEmpty); // No errors
 
@@ -219,10 +219,10 @@ public class OrganiseFilesTests
         var imagePath = Path.Combine(testSourceFolder, subfolder, "subimage.jpg");
         var imageFile = TestDataFactory.CreateMediaInfoFromFile(1, imagePath, FileState.Keep);
 
-        var files = toSeq(new[] { imageFile });
-        var options = CreateOrganizationOptions(copyOnly: true, keepParentFolder: true);
+        var files = toSeq([imageFile]);
+        var (copyOnly, sortByYear, keepParentFolder) = CreateOrganizationOptions(copyOnly: true, keepParentFolder: true);
 
-        var result = OrganiseFiles.DoOrganiseFiles(files, testDestinationFolder, options.copyOnly, options.sortByYear, options.keepParentFolder).Run();
+        var result = OrganiseFiles.DoOrganiseFiles(files, testDestinationFolder, copyOnly, sortByYear, keepParentFolder).Run();
 
         Assert.IsTrue(result.IsEmpty);
 
@@ -242,10 +242,10 @@ public class OrganiseFilesTests
         var imagePath = Path.Combine(testSourceFolder, subfolder, "subimage.jpg");
         var imageFile = TestDataFactory.CreateMediaInfoFromFile(1, imagePath, FileState.Keep);
 
-        var files = toSeq(new[] { imageFile });
-        var options = CreateOrganizationOptions(copyOnly: true, sortByYear: true, keepParentFolder: true);
+        var files = toSeq([imageFile]);
+        var (copyOnly, sortByYear, keepParentFolder) = CreateOrganizationOptions(copyOnly: true, sortByYear: true, keepParentFolder: true);
 
-        var result = OrganiseFiles.DoOrganiseFiles(files, testDestinationFolder, options.copyOnly, options.sortByYear, options.keepParentFolder).Run();
+        var result = OrganiseFiles.DoOrganiseFiles(files, testDestinationFolder, copyOnly, sortByYear, keepParentFolder).Run();
 
         Assert.IsTrue(result.IsEmpty); // no errors
 
@@ -269,11 +269,11 @@ public class OrganiseFilesTests
             ".jpg",
             FileState.Keep);
 
-        var files = toSeq(new[] { nonExistentFile });
-        var options = CreateOrganizationOptions();
+        var files = toSeq([nonExistentFile]);
+        var (copyOnly, sortByYear, keepParentFolder) = CreateOrganizationOptions();
 
         // Act
-        var result = OrganiseFiles.DoOrganiseFiles(files, testDestinationFolder, options.copyOnly, options.sortByYear, options.keepParentFolder).Run();
+        var result = OrganiseFiles.DoOrganiseFiles(files, testDestinationFolder, copyOnly, sortByYear, keepParentFolder).Run();
 
         // Assert
         Assert.IsFalse(result.IsEmpty); // Should have errors
@@ -291,9 +291,9 @@ public class OrganiseFilesTests
         var imagePath = Path.Combine(testSourceFolder, "image1.jpg");
         var imageFile = TestDataFactory.CreateMediaInfoFromFile(1, imagePath, FileState.Keep);
 
-        var files = toSeq(new[] { imageFile });
-        var options = CreateOrganizationOptions();
-        var result = OrganiseFiles.DoOrganiseFiles(files, invalidDestPath, options.copyOnly, options.sortByYear, options.keepParentFolder).Run();
+        var files = toSeq([imageFile]);
+        var (copyOnly, sortByYear, keepParentFolder) = CreateOrganizationOptions();
+        var result = OrganiseFiles.DoOrganiseFiles(files, invalidDestPath, copyOnly, sortByYear, keepParentFolder).Run();
 
         // Assert
         Assert.IsFalse(result.IsEmpty); // Should have errors
@@ -324,10 +324,10 @@ public class OrganiseFilesTests
             ".jpg",
             FileState.Keep);
 
-        var files = toSeq(new[] { readOnlyFile, missingFile });
-        var options = CreateOrganizationOptions(copyOnly: false); // Try to delete a read-only file
+        var files = toSeq([readOnlyFile, missingFile]);
+        var (copyOnly, sortByYear, keepParentFolder) = CreateOrganizationOptions(copyOnly: false); // Try to delete a read-only file
 
-        var result = OrganiseFiles.DoOrganiseFiles(files, testDestinationFolder, options.copyOnly, options.sortByYear, options.keepParentFolder).Run();
+        var result = OrganiseFiles.DoOrganiseFiles(files, testDestinationFolder, copyOnly, sortByYear, keepParentFolder).Run();
 
         // Assert
         Assert.IsFalse(result.IsEmpty); // Should have errors
@@ -340,7 +340,7 @@ public class OrganiseFilesTests
     /// <summary>
     /// Helper method to create organization options with specified settings
     /// </summary>
-    private (CopyOnly copyOnly, SortByYear sortByYear, KeepParentFolder keepParentFolder) CreateOrganizationOptions(
+    static (CopyOnly copyOnly, SortByYear sortByYear, KeepParentFolder keepParentFolder) CreateOrganizationOptions(
         bool copyOnly = true,
         bool sortByYear = false,
         bool keepParentFolder = false) =>
