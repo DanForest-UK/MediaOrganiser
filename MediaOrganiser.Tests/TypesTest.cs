@@ -9,13 +9,11 @@ public class TypesTests
     [TestMethod]
     public void FileIdCompareTo()
     {
-        // Arrange
         var id1 = new FileId(1);
         var id2 = new FileId(2);
         var id3 = new FileId(3);
         var id1Again = new FileId(1);
 
-        // Act & Assert
         Assert.IsTrue(id1.CompareTo(id2) < 0);  // 1 < 2
         Assert.IsTrue(id2.CompareTo(id1) > 0);  // 2 > 1
         Assert.IsTrue(id3.CompareTo(id2) > 0);  // 3 > 2
