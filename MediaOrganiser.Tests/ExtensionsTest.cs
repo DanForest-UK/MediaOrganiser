@@ -10,7 +10,111 @@ namespace MediaOrganiser.Tests.Domain;
 
 [TestClass]
 public class ExtensionsTests
-{
+{ 
+    /// <summary>
+    /// Tests that ValueOrNone returns None for null, empty, or whitespace strings.
+    /// </summary>
+    [TestMethod]
+    public void ValueOrNoneInvalid()
+    {
+        string? nullString = null;
+        Assert.IsTrue(nullString.ValueOrNone().IsNone);
+
+        string emptyString = string.Empty;
+        Assert.IsTrue(emptyString.ValueOrNone().IsNone);
+
+        var whitespaceString = "   ";
+        Assert.IsTrue(whitespaceString.ValueOrNone().IsNone);
+    }
+
+    /// <summary>
+    /// Tests that ValueOrNone returns Some with the value for valid strings.
+    /// </summary>
+    [TestMethod]
+    public void ValueOrNoneValid()
+    {
+        var validString = "test";
+        var result = validString.ValueOrNone();
+
+        Assert.IsTrue(result.IsSome);
+        result.IfSome(value => Assert.AreEqual(validString, value));
+
+        var validStringWithSpaces = "  test  ";
+        var resultWithSpaces = validStringWithSpaces.ValueOrNone();
+
+        Assert.IsTrue(resultWithSpaces.IsSome);
+        resultWithSpaces.IfSome(value => Assert.AreEqual(validStringWithSpaces, value));
+    }
+
+    /// <summary>
+    /// Tests that HandleEmptyPath catches and wraps ArgumentException with the correct message.
+    /// </summary>
+    [TestMethod]
+    public void HandleEmptyPath()
+    {
+        var exception = Assert.ThrowsException<WrappedErrorExpectedException>(() =>
+        {
+            var operation = IO.lift(() => { throw new ArgumentException("Path is empty"); });
+            operation.HandleEmptyPath().Run();
+        });
+
+        Assert.IsTrue(exception.Message.Contains(ErrorMessages.PathIsEmpty));
+    }
+
+    /// <summary>
+    /// Tests that HandleInvalidDirectory catches and wraps IOException with the correct message.
+    /// </summary>
+    [TestMethod]
+    public void HandleInvalidDirectory()
+    {
+        var testPath = "C:\\invalid*path";
+        var exception = Assert.ThrowsException<WrappedErrorExpectedException>(() =>
+        {
+            var operation = IO.lift(() =>
+            {
+                throw new IOException("The filename, directory name, or volume label syntax is incorrect");
+            });
+            operation.HandleInvalidDirectory(testPath).Run();
+        });
+
+        Assert.IsTrue(exception.Message.Contains(DirectoryInvalidPrefix));
+        Assert.IsTrue(exception.Message.Contains(testPath));
+    }
+
+    /// <summary>
+    /// Tests that HandleFileNotFound catches and wraps FileNotFoundException.
+    /// </summary>
+    [TestMethod]
+    public void HandleFileNotFound()
+    {
+        var testPath = "C:\\test\\nonexistent.txt";
+        var exception = Assert.ThrowsException<WrappedErrorExpectedException>(() =>
+        {
+            var operation = IO.lift(() => { throw new FileNotFoundException("File not found", testPath); });
+            operation.HandleFileNotFound(testPath).Run();
+        });
+
+        Assert.IsTrue(exception.Message.Contains(FileNotFoundPrefix));
+        Assert.IsTrue(exception.Message.Contains(testPath));
+    }
+
+    /// <summary>
+    /// Tests that HandleDirectoryNotFound catches and wraps DirectoryNotFoundException.
+    /// </summary>
+    [TestMethod]
+    public void HandleDirectoryNotFound()
+    {
+        var testPath = "C:\\test\\nonexistent";
+        var exception = Assert.ThrowsException<WrappedErrorExpectedException>(() =>
+        {
+            var operation = IO.lift(() => { throw new DirectoryNotFoundException("Directory not found"); });
+            operation.HandleDirectoryNotFound(testPath).Run();
+        });
+
+        Assert.IsTrue(exception.Message.Contains(ErrorMessages.DirectoryNotFoundPrefix));
+        Assert.IsTrue(exception.Message.Contains(testPath));
+    }
+
     /// <summary>
     /// Tests the Separate extension method with a list of numbers
     /// </summary>

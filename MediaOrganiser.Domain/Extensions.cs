@@ -51,7 +51,7 @@ public static class Extensions
     /// Handles exceptions related to empty paths
     /// </summary>
     public static IO<A> HandleEmptyPath<A>(this IO<A> ma) =>
-        ma | @catch(e => e.HasException<ArgumentException>() && e.Message.Contains("path is empty"),
+        ma | @catch(e => e.HasException<ArgumentException>() && e.Message.ToLower().Contains("path is empty"),
             e => IO.fail<A>(PathIsEmpty(e)));
 
     /// <summary>
