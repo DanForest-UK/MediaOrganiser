@@ -26,10 +26,8 @@ namespace MediaOrganiser.Controls
         /// <summary>
         /// Constructor
         /// </summary>
-        public VideoPlayerControl()
-        {
+        public VideoPlayerControl() =>
             InitializeControls();
-        }
 
         /// <summary>
         /// Initializes the MediaElement and hosts it in an ElementHost
@@ -52,14 +50,9 @@ namespace MediaOrganiser.Controls
 
             // Media element needs to be element host child
             elementHost.Child = mediaElement;
+            Controls.Add(elementHost);
+            BackColor = ThemeManager.PrimaryBackColor;
 
-            // Add the ElementHost to our control
-            this.Controls.Add(elementHost);
-
-            // Apply theme to the control
-            this.BackColor = ThemeManager.PrimaryBackColor;
-
-            // Subscribe to the MediaOpened and MediaEnded events
             mediaElement.MediaOpened += (s, e) => {
                 // Auto-play when media is loaded
                 mediaElement.Play();
@@ -77,7 +70,6 @@ namespace MediaOrganiser.Controls
         public Unit SetSource(string filePath) =>
             Try.lift(() =>
             {
-                // Set the source of the MediaElement
                 mediaElement.Source = new Uri(filePath);
                 return unit;
             }).IfFail(ex =>
@@ -115,20 +107,6 @@ namespace MediaOrganiser.Controls
             });
 
         /// <summary>
-        /// Pauses the current media
-        /// </summary>
-        public Unit Pause() =>
-            Try.lift(() =>
-            {
-                mediaElement.Pause();
-                return unit;
-            }).IfFail(ex =>
-            {
-                System.Diagnostics.Debug.WriteLine($"Error pausing media: {ex.Message}");
-                return unit;
-            });
-
-        /// <summary>
         /// Clean up resources
         /// </summary>
         protected override void Dispose(bool disposing)
@@ -137,13 +115,8 @@ namespace MediaOrganiser.Controls
             {
                 Try.lift(() =>
                 {
-                    // Stop any playing media
                     Stop();
-
-                    // Null the MediaElement source
                     mediaElement.Source = null;
-
-                    // Dispose the ElementHost
                     elementHost?.Dispose();
                     return unit;
                 }).IfFail(ex =>

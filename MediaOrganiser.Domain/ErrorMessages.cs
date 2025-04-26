@@ -1,5 +1,8 @@
 ﻿namespace MediaOrganiser.Domain;
 
+/// <summary>
+/// Error message descriptions
+/// </summary>
 public static class ErrorMessages
 {
     public const string ThereWasAProblem = "There was a problem";

@@ -370,7 +370,9 @@ namespace MediaOrganiser
             videoPlayer = None;
         }
 
-
+        /// <summary>
+        /// Dispose document viewer
+        /// </summary>
         void DisposeDocumentViewer()
         {
             documentViewer.IfSome(dv =>
@@ -660,14 +662,20 @@ namespace MediaOrganiser
         /// <summary>
         /// Handles the Bin button click
         /// </summary>
-        void btnBin_Click(object sender, EventArgs e) =>
+        void btnBin_Click(object sender, EventArgs e)
+        {
             ObservableState.UpdateFileState(FileState.Bin);
+            ObservableState.NextFile();
+        }
 
         /// <summary>
         /// Handles the Keep button click
         /// </summary>
-        void btnKeep_Click(object sender, EventArgs e) =>
+        void btnKeep_Click(object sender, EventArgs e)
+        {
             ObservableState.UpdateFileState(FileState.Keep);
+            ObservableState.NextFile();
+        }
 
         /// <summary>
         /// Shows a message box with UI thread safety
@@ -680,6 +688,9 @@ namespace MediaOrganiser
                 MessageBox.Show(this, message, caption, buttons, icon);
         }
 
+        /// <summary>
+        /// Handle filename changed
+        /// </summary>
         private void tbFileName_TextChanged(object sender, EventArgs e) =>
             ObservableState.UpdateFilename(tbFileName.Text);
     }

@@ -113,7 +113,7 @@ public class AppModelTests
             CurrentFile = Option<FileId>.Some(fileId)
         };
 
-        var newModel = model.RotateCurrentImage(Rotation.Rotate90);
+        var newModel = model.TryRotateCurrentImage(Rotation.Rotate90);
 
         Assert.AreEqual(Rotation.Rotate90, newModel.Files[fileId].Rotation);
     }
@@ -133,7 +133,7 @@ public class AppModelTests
             CurrentFile = Option<FileId>.Some(fileId)
         };
 
-        var newModel = model.RotateCurrentImage(Rotation.Rotate270);
+        var newModel = model.TryRotateCurrentImage(Rotation.Rotate270);
 
         Assert.AreEqual(Rotation.Rotate270, newModel.Files[fileId].Rotation);
     }
@@ -153,8 +153,8 @@ public class AppModelTests
             CurrentFile = Option<FileId>.Some(fileId)
         };
 
-        var intermediateModel = model.RotateCurrentImage(Rotation.Rotate90);
-        var finalModel = intermediateModel.RotateCurrentImage(Rotation.Rotate90);
+        var intermediateModel = model.TryRotateCurrentImage(Rotation.Rotate90);
+        var finalModel = intermediateModel.TryRotateCurrentImage(Rotation.Rotate90);
 
         Assert.AreEqual(Rotation.Rotate180, finalModel.Files[fileId].Rotation);
     }
@@ -174,10 +174,10 @@ public class AppModelTests
             CurrentFile = Option<FileId>.Some(fileId)
         };
 
-        var model1 = model.RotateCurrentImage(Rotation.Rotate90);
-        var model2 = model1.RotateCurrentImage(Rotation.Rotate90);
-        var model3 = model2.RotateCurrentImage(Rotation.Rotate90);
-        var model4 = model3.RotateCurrentImage(Rotation.Rotate90);
+        var model1 = model.TryRotateCurrentImage(Rotation.Rotate90);
+        var model2 = model1.TryRotateCurrentImage(Rotation.Rotate90);
+        var model3 = model2.TryRotateCurrentImage(Rotation.Rotate90);
+        var model4 = model3.TryRotateCurrentImage(Rotation.Rotate90);
 
         Assert.AreEqual(Rotation.None, model4.Files[fileId].Rotation);
     }
@@ -198,7 +198,7 @@ public class AppModelTests
             CurrentFile = Option<FileId>.Some(new FileId(2))
         };
 
-        var newModel = model.MoveToNextFile();
+        var newModel = model.TryMoveToNextFile();
 
         Assert.AreEqual(model, newModel);
     }
@@ -220,7 +220,7 @@ public class AppModelTests
             CurrentFile = Option<FileId>.Some(new FileId(1))
         };
 
-        var newModel = model.MoveToNextFile();
+        var newModel = model.TryMoveToNextFile();
 
         Assert.IsTrue(newModel.CurrentFile.IsSome);
         Assert.AreEqual(2, newModel.CurrentFile.Map(id => id.Value).IfNone(0));
@@ -286,7 +286,7 @@ public class AppModelTests
             CurrentFile = Option<FileId>.Some(fileId)
         };
 
-        var newModel = model.UpdateFileState(FileState.Keep);
+        var newModel = model.TryUpdateFileState(FileState.Keep);
 
         Assert.AreEqual(FileState.Keep, newModel.Files[fileId].State);
     }
@@ -307,7 +307,7 @@ public class AppModelTests
             CurrentFile = fileId
         };
 
-        var newModel = model.UpdateFilename("newname");
+        var newModel = model.TryUpdateFilename("newname");
 
         Assert.AreEqual("newname", newModel.Files[fileId].FileName.Value);
     }

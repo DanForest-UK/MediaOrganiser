@@ -70,19 +70,19 @@ public static class ObservableState
     /// Move to the next file in the collection
     /// </summary>
     public static void NextFile() =>
-        Update(Current.MoveToNextFile());
+        Update(Current.TryMoveToNextFile());
 
     /// <summary>
     /// Rotates the current image
     /// </summary>
     public static void RotateCurrentImage(Rotation direction) =>
-        Update(Current.RotateCurrentImage(direction));
+        Update(Current.TryRotateCurrentImage(direction));
 
     /// <summary>
     /// Updates the filename of the current file
     /// </summary>
     public static void UpdateFilename(string newFilename) =>
-        Update(Current.UpdateFilename(newFilename));
+        Update(Current.TryUpdateFilename(newFilename));
 
     /// <summary>
     /// Move to the previous file in the collection
@@ -94,7 +94,7 @@ public static class ObservableState
     /// Update file state
     /// </summary>
     public static void UpdateFileState(FileState state) =>
-        Update(Current.UpdateFileState(state));
+        Update(Current.TryUpdateFileState(state));
 
     /// <summary>
     /// Clears all files from the application state

@@ -245,7 +245,7 @@ public class ScanFilesTests
     [TestMethod]
     public void ScanFilesLongPath()
     {
-        // Arrange - Create a path that's too long (> 260 chars on Windows)
+        // Create a path that's too long (> 260 chars on Windows)
         string longPathPart = new ('a', 50); 
         string longPath = testFolder;
 

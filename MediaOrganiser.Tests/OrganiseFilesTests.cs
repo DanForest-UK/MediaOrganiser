@@ -126,7 +126,6 @@ public class OrganiseFilesTests
 
         var result = OrganiseFiles.DoOrganiseFiles(files, testDestinationFolder, copyOnly, sortByYear, keepParentFolder).Run();
 
-        // Assert
         Assert.IsTrue(result.IsEmpty); // No errors
 
         // Each file should be copied to the appropriate category folder
@@ -141,7 +140,7 @@ public class OrganiseFilesTests
     [TestMethod]
     public void OrganiseFilesUniqueNames()
     {
-        // Arrange - Create two files with same name
+        // Create two files with same name
         var sourcePath = Path.Combine(testSourceFolder, "image1.jpg");
 
         // Same image twice - second should not overwrite first
@@ -236,7 +235,6 @@ public class OrganiseFilesTests
     [TestMethod]
     public void OrganiseFilesByYearAndParentFolder()
     {
-        // Arrange
         var currentYear = DateTime.Now.Year.ToString();
         var subfolder = "Subfolder";
         var imagePath = Path.Combine(testSourceFolder, subfolder, "subimage.jpg");
@@ -259,7 +257,7 @@ public class OrganiseFilesTests
     [TestMethod]
     public void OrganiseFilesMissingFile()
     {
-        // Arrange - Create MediaInfo for file that doesn't exist
+        // Create MediaInfo for file that doesn't exist
         var nonExistentPath = Path.Combine(testSourceFolder, "nonexistent.jpg");
         var nonExistentFile = TestDataFactory.CreateMediaInfo(
             1,
@@ -272,10 +270,8 @@ public class OrganiseFilesTests
         var files = toSeq([nonExistentFile]);
         var (copyOnly, sortByYear, keepParentFolder) = CreateOrganizationOptions();
 
-        // Act
         var result = OrganiseFiles.DoOrganiseFiles(files, testDestinationFolder, copyOnly, sortByYear, keepParentFolder).Run();
 
-        // Assert
         Assert.IsFalse(result.IsEmpty); // Should have errors
         Assert.AreEqual(1, result.Count); // Should be one error
         Assert.IsTrue(result.First().Message.Contains("File not found")); // Error should mention file not found
@@ -295,7 +291,6 @@ public class OrganiseFilesTests
         var (copyOnly, sortByYear, keepParentFolder) = CreateOrganizationOptions();
         var result = OrganiseFiles.DoOrganiseFiles(files, invalidDestPath, copyOnly, sortByYear, keepParentFolder).Run();
 
-        // Assert
         Assert.IsFalse(result.IsEmpty); // Should have errors
         // The error should be related to the invalid path
         Assert.IsTrue(result.First().Message.Contains("Unable to create directory"));
@@ -307,7 +302,6 @@ public class OrganiseFilesTests
     [TestMethod]
     public void OrganiseFilePermissionError()
     {
-        // Arrange
         // Create a read-only file to simulate a permission error
         var readOnlyFilePath = Path.Combine(testSourceFolder, "readonly.jpg");
         TestDataFactory.CreateTestFile(readOnlyFilePath, 1024);
@@ -329,7 +323,6 @@ public class OrganiseFilesTests
 
         var result = OrganiseFiles.DoOrganiseFiles(files, testDestinationFolder, copyOnly, sortByYear, keepParentFolder).Run();
 
-        // Assert
         Assert.IsFalse(result.IsEmpty); // Should have errors
         Assert.AreEqual(2, result.Count); // Should have 2 errors (one for each file)
 

@@ -3,6 +3,16 @@ using LanguageExt;
 
 namespace MediaOrganiser.Domain;
 
+/// <summary>
+/// Main state model for the app
+/// </summary>
+/// <param name="Files">Collection of files to sort</param>
+/// <param name="WorkInProgress">Is an operation in progress</param>
+/// <param name="CurrentFolder">Current folder</param>
+/// <param name="CurrentFile">Current file ID</param>
+/// <param name="CopyOnly">Copy files when organise instead of move</param>
+/// <param name="SortByYear">Sort into folders by year</param>
+/// <param name="KeepParentFolder">Create top level folder in new folder heirachy</param>
 public record AppModel(
             Map<FileId, MediaInfo> Files,
             bool WorkInProgress,
@@ -13,7 +23,10 @@ public record AppModel(
             KeepParentFolder KeepParentFolder)
 {
 
-    public static AppModel Empty => new (
+    /// <summary>
+    /// Empty app model
+    /// </summary>
+    public static AppModel Empty => new(
         [],
         false,
         None,
@@ -22,6 +35,10 @@ public record AppModel(
         new SortByYear(false),
         new KeepParentFolder(false));
 
+    /// <summary>
+    /// Counts how many files are to be deleted
+    /// </summary>
+    /// <returns></returns>
     public int CountFilesForDeletion() =>
       Files.Values.Count(f => f.State == FileState.Bin);
 
@@ -43,13 +60,13 @@ public record AppModel(
             CurrentFile = files.Length > 0
                 ? files.First().Id
                 : None
-        };     
+        };
     }
 
     /// <summary>
-    /// Rotate the current image
+    /// Rotate the current image - internal implementation
     /// </summary> 
-    public AppModel RotateCurrentImage(Rotation direction) =>
+    Option<AppModel> RotateCurrentImage(Rotation direction) =>
         CurrentFile.Map(
             currentId =>
             {
@@ -61,7 +78,7 @@ public record AppModel(
                         ? (Rotation)(((int)file.Rotation + 90) % 360)
                         : direction == Rotation.Rotate270
                             ? (Rotation)(((int)file.Rotation + 270) % 360)
-                            : file.Rotation;                   
+                            : file.Rotation;
 
                     return this with
                     {
@@ -69,36 +86,33 @@ public record AppModel(
                     };
                 }
                 return this;
-            }).IfNone(this);
-    
+            });
+
+    /// <summary>
+    /// Rotate the current image
+    /// </summary> 
+    public AppModel TryRotateCurrentImage(Rotation direction) =>
+        RotateCurrentImage(direction).IfNone(this);
+
     /// <summary>
     /// Move to the next file
     /// </summary>
-    public AppModel MoveToNextFile()
-    {
-        return CurrentFile.Match(
-            Some: currentId =>
-            {
-                // Get ordered keys
-                var keys = Files.Keys.ToList();
-                var index = keys.FindIndex(k => k.Value == currentId.Value);
+    Option<AppModel> MoveToNextFile() =>
+        from currentFile in CurrentFile
+        let keys = Files.Keys.ToList()
+        let index = keys.FindIndex(k => k.Value == currentFile.Value)
+        where index >= 0 && index < keys.Count - 1
+        select this with { CurrentFile = keys[index + 1] };
 
-                if (index >= 0 && index < keys.Count - 1)
-                {
-                    return this with { CurrentFile = keys[index + 1] };
-                }
-                return this;
-            },
-            None: () => this
-        );
-    }
+    public AppModel TryMoveToNextFile() =>
+        MoveToNextFile().IfNone(this);
 
     /// <summary>
-    /// Move to the previous file
+    /// Move to the previous file - internal implementation
     /// </summary>
-    public AppModel MoveToPreviousFile() =>
+    Option<AppModel> TryMoveToPreviousFile() =>
         CurrentFile.Map(
-             currentId =>
+            currentId =>
             {
                 var keys = Files.Keys.ToList();
                 var index = keys.FindIndex(k => k.Value == currentId.Value);
@@ -108,12 +122,18 @@ public record AppModel(
                     return this with { CurrentFile = keys[index - 1] };
                 }
                 return this;
-            }).IfNone(this);   
+            });
 
     /// <summary>
-    /// Update file state
+    /// Move to the previous file
     /// </summary>
-    public AppModel UpdateFileState(FileState state) =>
+    public AppModel MoveToPreviousFile() =>
+        TryMoveToPreviousFile().IfNone(this);
+
+    /// <summary>
+    /// Update file state - internal implementation
+    /// </summary>
+    Option<AppModel> UpdateFileState(FileState state) =>
         CurrentFile.Map(
             currentId =>
             {
@@ -125,12 +145,18 @@ public record AppModel(
                     };
                 }
                 return this;
-            }).IfNone(this);          
+            });
 
     /// <summary>
-    /// Update file name
+    /// Update file state
     /// </summary>
-    public AppModel UpdateFilename(string newFilename) =>
+    public AppModel TryUpdateFileState(FileState state) =>
+        UpdateFileState(state).IfNone(this);
+
+    /// <summary>
+    /// Update file name - internal implementation
+    /// </summary>
+    Option<AppModel> UpdateFilename(string newFilename) =>
         CurrentFile.Map(
             currentId =>
             {
@@ -142,5 +168,11 @@ public record AppModel(
                     };
                 }
                 return this;
-            }).IfNone(this);  
+            });
+
+    /// <summary>
+    /// Update file name
+    /// </summary>
+    public AppModel TryUpdateFilename(string newFilename) =>
+        UpdateFilename(newFilename).IfNone(this);
 }

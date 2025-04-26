@@ -183,7 +183,6 @@ public class DocumentViewerControl : UserControl
         // Initialize the IronPdf license if you have one, otherwise you get a watermark
         InitializeIronPdf();
 
-        // Add controls to this control
         Controls.Add(txtDocumentContent);
         Controls.Add(rtfDocumentContent);
         Controls.Add(loadingPanel);
@@ -522,14 +521,13 @@ public class DocumentViewerControl : UserControl
         {
             Try.lift(() =>
             {
-                // Create a simple panel with a button to open Word doc
-                Panel wordPanel = new()
+                var wordPanel = new Panel()
                 {
                     Dock = DockStyle.Fill
                 };
                 ThemeManager.StylePanel(wordPanel, ThemeManager.PrimaryBackColor);
 
-                Label infoLabel = new Label
+                var infoLabel = new Label
                 {
                     Text = $"Document: {Path.GetFileName(filePath)}",
                     AutoSize = false,
@@ -602,7 +600,7 @@ public class DocumentViewerControl : UserControl
             // Clean up old image if there is one
             if (pdfPictureBox.Image != null && pdfPictureBox.Image != pdfPageImages[pageIndex])
             {
-                // Don't dispose the image as we're keeping them in the pdfPageImages list
+                // Don't dispose.. handled separately by the dispose
                 pdfPictureBox.Image = null;
             }
 
@@ -747,7 +745,6 @@ public class DocumentViewerControl : UserControl
                 tempPdfPath = None;
             });           
 
-            // Reset page counters
             currentPdfPage = 0;
             totalPdfPages = 0;
             return unit;

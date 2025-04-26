@@ -16,7 +16,6 @@ public class ThemeManagerTests
     [TestMethod]
     public void StyleButton()
     {
-        // Arrange
         var button = new Button();
 
         ThemeManager.StyleButton(button);

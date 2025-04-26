@@ -6,4 +6,7 @@ using System.Threading.Tasks;
 
 namespace MediaOrganiser.Domain;
 
+/// <summary>
+/// File date type
+/// </summary>
 public record Date(DateTime Value);

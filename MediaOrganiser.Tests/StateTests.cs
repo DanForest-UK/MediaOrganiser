@@ -316,7 +316,7 @@ public class StateTests
     [TestMethod]
     public void UpdateWithNoStateChange()
     {
-        // Arrange - create a state that's identical to current
+        // Create a state that's identical to current
         var currentState = ObservableState.Current;
         bool eventFired = false;
         ObservableState.StateChanged += (sender, state) => eventFired = true;
@@ -400,7 +400,6 @@ public class StateTests
         // Wait for all threads to complete (with timeout)
         var completed = allDone.WaitOne(TimeSpan.FromSeconds(10));
 
-        // Assert
         Assert.IsTrue(completed, "Not all threads completed in time");
         Assert.AreEqual(0, threadExceptions.Count, $"Exceptions occurred: {string.Join(", ", threadExceptions.Select(e => e.Message))}");
     }

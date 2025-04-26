@@ -40,7 +40,6 @@ public static class StateSerialiser
         {
             if (state.Files.Values.Any())
             {
-                // Create a serializable version of the state
                 var serializableState = state.ToSerializableAppModel();
                 var json = JsonSerializer.Serialize(serializableState, SerializerOptions);
                 File.WriteAllText(StateFilePath, json);
@@ -87,7 +86,7 @@ public static class StateSerialiser
         });
 
     /// <summary>
-    /// Conerts app model to something that serializes nicely
+    /// Converts app model to something that serializes nicely
     /// </summary>
     public static SerialisableAppModel ToSerializableAppModel(this AppModel model) =>
         new(

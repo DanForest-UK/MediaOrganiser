@@ -7,6 +7,9 @@ using static MediaOrganiser.Domain.AppErrors;
 
 namespace MediaOrganiser.Domain;
 
+/// <summary>
+/// Extension methods used accross the app
+/// </summary>
 public static class Extensions
 {
     /// <summary>

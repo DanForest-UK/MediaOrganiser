@@ -1,5 +1,8 @@
 ﻿namespace MediaOrganiser.Domain;
 
+/// <summary>
+/// Type of file
+/// </summary>
 public enum FileCategory
 {
     Image,
@@ -8,6 +11,9 @@ public enum FileCategory
     Unknown
 }
 
+/// <summary>
+/// What will be done with the file on organise
+/// </summary>
 public enum FileState
 {
     Keep,
@@ -15,6 +21,9 @@ public enum FileState
     Undecided
 }
 
+/// <summary>
+/// How rotated the final image should be
+/// </summary>
 public enum Rotation
 {
     None = 0,

@@ -142,15 +142,12 @@ public static class OrganiseFiles
         {
             var pathComponents = new List<string> { destinationBasePath, categoryFolder };
 
-            // Add parent folder name if enabled
             if (keepParentFolder.Value)
                 pathComponents.Add(new FileInfo(file.FullPath.Value)?.Directory?.Name!);
 
-            // Add year if sorting by year is enabled
             if (sortByYear.Value)
                 pathComponents.Add(file.Date.Value.Year.ToString());
 
-            // Create the target directory
             var targetDir = Path.Combine([.. pathComponents]);
             Directory.CreateDirectory(targetDir);
 
