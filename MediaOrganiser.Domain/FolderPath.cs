@@ -3,4 +3,4 @@
 /// <summary>
 /// Root folder path type
 /// </summary>
-public record FolderPath(string Value);
+public readonly record struct FolderPath(string Value);

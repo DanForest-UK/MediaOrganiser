@@ -3,4 +3,4 @@
 /// <summary>
 /// Copy only type
 /// </summary>
-public record CopyOnly(bool Value);
+public readonly record struct CopyOnly(bool Value);

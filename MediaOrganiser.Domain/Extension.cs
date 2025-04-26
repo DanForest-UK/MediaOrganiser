@@ -4,4 +4,4 @@ namespace MediaOrganiser.Domain;
 /// <summary>
 /// File extension type
 /// </summary>
-public record Extension(string Value);
+public readonly record struct Extension(string Value);

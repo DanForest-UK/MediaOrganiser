@@ -3,4 +3,4 @@
 /// <summary>
 /// File name type
 /// </summary>
-public record FileName(string Value);
+public readonly record struct FileName(string Value);

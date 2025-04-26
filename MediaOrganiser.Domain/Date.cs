@@ -9,4 +9,4 @@ namespace MediaOrganiser.Domain;
 /// <summary>
 /// File date type
 /// </summary>
-public record Date(DateTime Value);
+public readonly record struct Date(DateTime Value);

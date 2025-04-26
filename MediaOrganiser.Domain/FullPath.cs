@@ -2,4 +2,4 @@
 /// <summary>
 /// Full path of a file type
 /// </summary>
-public record FullPath(string Value);
+public readonly record struct FullPath(string Value);
